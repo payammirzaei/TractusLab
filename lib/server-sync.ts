@@ -1,10 +1,18 @@
-import type { BossScores } from "./boss";
-import type { LearningProgress, ScenarioProgress } from "./progress";
+import { BOSS_SCORE_STORAGE_KEY, type BossScores } from "./boss";
+import { LEARNER_NAME_STORAGE_KEY } from "./profile";
+import { PROGRESS_STORAGE_KEY, type LearningProgress, type ScenarioProgress } from "./progress";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
 const SESSION_TOKEN_KEY = "tractuslab-api-session-v1";
 
 let sessionPromise: Promise<string | null> | null = null;
+
+export type AccountUser = {
+  id: string;
+  email: string | null;
+  display_name: string | null;
+  is_guest: boolean;
+};
 
 type RemoteProgress = {
   scenario_id: string;
@@ -14,7 +22,7 @@ type RemoteProgress = {
 };
 
 type RemoteState = {
-  user: { id: string; display_name: string | null };
+  user: AccountUser;
   progress: Record<string, RemoteProgress>;
   boss_scores: BossScores;
 };
@@ -62,6 +70,57 @@ async function apiFetch(path: string, init: RequestInit = {}, retry = true): Pro
   return response;
 }
 
+export async function getCurrentAccount(): Promise<AccountUser | null> {
+  if (!API_URL) return null;
+  const response = await apiFetch("/v1/me");
+  if (!response.ok) throw new Error(`Account load failed: ${response.status}`);
+  return (await response.json()) as AccountUser;
+}
+
+export async function registerAccount(input: { email: string; password: string; displayName?: string }): Promise<AccountUser> {
+  const response = await apiFetch("/v1/auth/register", {
+    method: "POST",
+    body: JSON.stringify({ email: input.email, password: input.password, display_name: input.displayName || null }),
+  });
+  if (!response.ok) {
+    const body = (await response.json().catch(() => ({}))) as { detail?: string };
+    throw new Error(body.detail || `Registration failed: ${response.status}`);
+  }
+  return (await response.json()) as AccountUser;
+}
+
+export async function loginAccount(email: string, password: string): Promise<AccountUser> {
+  if (!API_URL || typeof window === "undefined") throw new Error("Account backend is not configured");
+  const response = await fetch(`${API_URL}/v1/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!response.ok) {
+    const body = (await response.json().catch(() => ({}))) as { detail?: string };
+    throw new Error(body.detail || "Login failed");
+  }
+  const body = (await response.json()) as { access_token: string; user: AccountUser };
+  window.localStorage.setItem(SESSION_TOKEN_KEY, body.access_token);
+  clearLocalLearningCache();
+  return body.user;
+}
+
+export async function logoutAccount(): Promise<void> {
+  if (!API_URL || typeof window === "undefined") return;
+  const response = await apiFetch("/v1/auth/logout", { method: "POST" }, false);
+  if (!response.ok && response.status !== 401) throw new Error(`Logout failed: ${response.status}`);
+  window.localStorage.removeItem(SESSION_TOKEN_KEY);
+  clearLocalLearningCache();
+}
+
+export function clearLocalLearningCache(): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(PROGRESS_STORAGE_KEY);
+  window.localStorage.removeItem(BOSS_SCORE_STORAGE_KEY);
+  window.localStorage.removeItem(LEARNER_NAME_STORAGE_KEY);
+}
+
 export async function loadRemoteState(): Promise<{ progress: LearningProgress; bossScores: BossScores; displayName: string | null } | null> {
   if (!API_URL) return null;
   const response = await apiFetch("/v1/state");
@@ -106,11 +165,7 @@ export function mergeBossScores(local: BossScores, remote: BossScores): BossScor
 async function putProgress(scenarioId: string, row: ScenarioProgress): Promise<void> {
   const response = await apiFetch(`/v1/progress/${encodeURIComponent(scenarioId)}`, {
     method: "PUT",
-    body: JSON.stringify({
-      max_step: row.maxStep,
-      completed: row.completed,
-      solved_challenges: row.solvedChallenges,
-    }),
+    body: JSON.stringify({ max_step: row.maxStep, completed: row.completed, solved_challenges: row.solvedChallenges }),
   });
   if (!response.ok) throw new Error(`Progress sync failed: ${response.status}`);
 }
@@ -122,15 +177,10 @@ export async function syncLearningProgress(progress: LearningProgress): Promise<
 
 export async function syncBossScores(scores: BossScores): Promise<void> {
   if (!API_URL) return;
-  await Promise.all(
-    Object.entries(scores).map(async ([scenarioId, score]) => {
-      const response = await apiFetch(`/v1/boss-scores/${encodeURIComponent(scenarioId)}`, {
-        method: "PUT",
-        body: JSON.stringify({ score }),
-      });
-      if (!response.ok) throw new Error(`Boss score sync failed: ${response.status}`);
-    }),
-  );
+  await Promise.all(Object.entries(scores).map(async ([scenarioId, score]) => {
+    const response = await apiFetch(`/v1/boss-scores/${encodeURIComponent(scenarioId)}`, { method: "PUT", body: JSON.stringify({ score }) });
+    if (!response.ok) throw new Error(`Boss score sync failed: ${response.status}`);
+  }));
 }
 
 export async function clearRemoteProgress(): Promise<void> {
@@ -147,9 +197,6 @@ export async function clearRemoteBossScores(): Promise<void> {
 
 export async function syncDisplayName(displayName: string): Promise<void> {
   if (!API_URL) return;
-  const response = await apiFetch("/v1/me", {
-    method: "PATCH",
-    body: JSON.stringify({ display_name: displayName || null }),
-  });
+  const response = await apiFetch("/v1/me", { method: "PATCH", body: JSON.stringify({ display_name: displayName || null }) });
   if (!response.ok) throw new Error(`Profile sync failed: ${response.status}`);
 }
