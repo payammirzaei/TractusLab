@@ -10,7 +10,7 @@ import {
   type Challenge,
   type LearningScenario,
 } from "../lib/simulator.ts";
-import { learningScenarios } from "../data/scenarios.ts";
+import { getScenarioById, learningScenarios, scenarioCount } from "../data/catalog.ts";
 
 test("progressPercent clamps values and reaches 100", () => {
   assert.equal(progressPercent(0, 5), 0);
@@ -113,5 +113,25 @@ test("scenario validation catches structural content problems", () => {
 test("shipped learning scenarios satisfy structural validation", () => {
   for (const scenario of learningScenarios) {
     assert.deepEqual(validateScenario(scenario), [], scenario.id);
+  }
+});
+
+test("scenario catalog has unique ids and safe fallback behavior", () => {
+  assert.equal(scenarioCount(), 4);
+  assert.equal(new Set(learningScenarios.map((scenario) => scenario.id)).size, learningScenarios.length);
+  assert.equal(getScenarioById("traceability").id, "traceability");
+  assert.equal(getScenarioById("demand-capacity").id, "demand-capacity");
+  assert.equal(getScenarioById("missing-scenario").id, learningScenarios[0].id);
+});
+
+test("every shipped scenario contains learning and diagnostic content", () => {
+  for (const scenario of learningScenarios) {
+    assert.ok(scenario.steps.length >= 5, `${scenario.id} should have at least five steps`);
+    assert.ok(scenario.challenges.length >= 2, `${scenario.id} should have at least two challenges`);
+    for (const step of scenario.steps) {
+      assert.ok(step.question.trim().length > 10, `${scenario.id}/${step.id} needs a real question`);
+      assert.ok(step.whyNeeded.trim().length > 10, `${scenario.id}/${step.id} needs a why-needed explanation`);
+      assert.ok(step.withoutIt.trim().length > 10, `${scenario.id}/${step.id} needs a skip consequence`);
+    }
   }
 });
