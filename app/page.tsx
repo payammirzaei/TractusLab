@@ -2,9 +2,9 @@ import Link from "next/link";
 
 const journey = [
   ["1", "Start with the business problem", "No protocol names. Just two companies that need to exchange useful data."],
-  ["2", "Watch the pieces appear", "Identity, catalog, policy, semantics and transfer only show up when the story needs them."],
+  ["2", "Follow the guided missions", "Concepts unlock in a deliberate order, while useful branches open when the foundation is strong enough."],
   ["3", "Choose your depth", "Manager, Architect and Developer views explain the same moment at different technical depths."],
-  ["4", "Break it and fix it", "Failure challenges make the learner diagnose policy, discovery and semantic problems."],
+  ["4", "Prove it in Boss Fights", "Failure diagnosis earns competencies and clears the final mastery gate."],
 ] as const;
 
 export default function HomePage() {
@@ -21,18 +21,18 @@ export default function HomePage() {
           <h1 className="max-w-4xl text-5xl font-semibold leading-[1.01] tracking-[-0.055em] md:text-7xl">Understand the dataspace before you learn the stack.</h1>
           <p className="mt-7 max-w-2xl text-lg leading-8 text-white/60">A manager should understand why Tractus-X exists. An architect should see how its pieces connect. A developer should be able to inspect the technical flow. Same story, different depth.</p>
           <div className="mt-9 flex flex-wrap gap-3">
-            <Link href="/scenarios" className="rounded-full bg-emerald-300 px-6 py-3 font-semibold text-[#07110f] transition hover:translate-y-[-1px]">Explore simulations →</Link>
-            <Link href="/learn/battery-pcf" className="rounded-full border border-white/15 px-6 py-3 font-medium text-white/75">Start with Battery CO₂</Link>
+            <Link href="/path" className="rounded-full bg-emerald-300 px-6 py-3 font-semibold text-[#07110f] transition hover:translate-y-[-1px]">Start guided path →</Link>
+            <Link href="/scenarios" className="rounded-full border border-white/15 px-6 py-3 font-medium text-white/75">Explore all simulations</Link>
           </div>
           <div className="mt-9 flex flex-wrap gap-2 text-xs text-white/38">
-            {['Battery PCF / CO₂', 'Digital Twin', 'Traceability', 'Demand & Capacity', 'Quality', 'Circular Economy', 'Manager → Developer depth', 'Break & Fix'].map((item) => (
+            {['Guided missions', 'Battery PCF / CO₂', 'Digital Twin', 'Traceability', 'Demand & Capacity', 'Quality', 'Circular Economy', 'Boss Fight mastery'].map((item) => (
               <span key={item} className="rounded-full border border-white/10 bg-white/[0.025] px-3 py-1.5">{item}</span>
             ))}
           </div>
         </div>
 
         <div className="rounded-[2rem] border border-white/10 bg-white/[0.035] p-5 shadow-2xl shadow-black/20 md:p-7">
-          <div className="flex items-center justify-between text-xs text-white/40"><span>Scenario</span><span>Battery PCF</span></div>
+          <div className="flex items-center justify-between text-xs text-white/40"><span>Mission 01</span><span>Battery PCF</span></div>
           <div className="mt-6 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
             <Company title="Supplier" icon="🏭" subtitle="Owns PCF data" />
             <div className="text-center text-emerald-300"><div className="text-xs text-white/35">governed exchange</div><div className="mt-2 text-4xl">↔</div></div>

@@ -4,8 +4,11 @@
 
 TractusLab is an interactive, simulation-first learning environment for Tractus-X and dataspace concepts. The current version intentionally avoids a real EDC/DTR backend so the learning experience stays fast, visual and approachable.
 
-## Simulator v0.5
+## Simulator v0.6
 
+- Guided mission / curriculum path with prerequisites and unlocks
+- Competency tracking based on completed scenarios and diagnostic mastery
+- Final mastery gate requiring all learning missions plus three Boss Fight scores of 70+
 - Business-first learning journeys
 - Manager / Architect / Developer depth switcher
 - Explain-like-I’m-new mode
@@ -46,6 +49,7 @@ npm run build
 
 1. **Simulation first** — teach the mental model with instant feedback.
 2. **Business first** — explain the problem before the acronym.
-3. **Progressive depth** — reveal architecture and developer detail only when useful.
-4. **Break & Fix** — teach diagnosis instead of passive reading.
-5. **Real lab later** — connect the same visual model to real Tractus-X components only after the simulator is proven.
+3. **Guided progression** — unlock concepts in a deliberate order instead of dropping the whole stack on a new learner.
+4. **Progressive depth** — reveal architecture and developer detail only when useful.
+5. **Break & Fix** — teach diagnosis instead of passive reading.
+6. **Real lab later** — connect the same visual model to real Tractus-X components only after the simulator is proven.

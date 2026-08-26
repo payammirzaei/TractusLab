@@ -1,0 +1,112 @@
+import type { CompetencyDefinition, MissionDefinition } from "../lib/curriculum";
+
+export const curriculumMissions: MissionDefinition[] = [
+  {
+    id: "foundation-pcf",
+    title: "Understand one governed data exchange",
+    description: "Start with a concrete Battery PCF story and learn why identity, catalog, policy, agreement and transfer appear.",
+    kind: "scenario",
+    scenarioId: "battery-pcf",
+    prerequisiteIds: [],
+    competencyIds: ["dataspace-foundations"],
+  },
+  {
+    id: "digital-twin",
+    title: "Find the right digital representation",
+    description: "Learn how an asset becomes discoverable through a Digital Twin and standardized submodel information.",
+    kind: "scenario",
+    scenarioId: "digital-twin",
+    prerequisiteIds: ["foundation-pcf"],
+    competencyIds: ["digital-twin-literacy"],
+  },
+  {
+    id: "demand-capacity",
+    title: "Coordinate demand without sharing the whole ERP",
+    description: "Apply the same dataspace mental model to planning data between customer and supplier.",
+    kind: "scenario",
+    scenarioId: "demand-capacity",
+    prerequisiteIds: ["foundation-pcf"],
+    competencyIds: ["planning-exchange"],
+  },
+  {
+    id: "traceability",
+    title: "Trace an issue across company boundaries",
+    description: "Follow part relationships and partner data to understand cross-company traceability.",
+    kind: "scenario",
+    scenarioId: "traceability",
+    prerequisiteIds: ["digital-twin"],
+    competencyIds: ["traceability"],
+  },
+  {
+    id: "quality",
+    title: "Collaborate on quality data",
+    description: "Use governed exchange and shared meaning to investigate a quality problem without losing data sovereignty.",
+    kind: "scenario",
+    scenarioId: "quality",
+    prerequisiteIds: ["traceability"],
+    competencyIds: ["quality-collaboration"],
+  },
+  {
+    id: "circularity",
+    title: "Build a usable product passport view",
+    description: "Connect digital twins, semantics and controlled partner data to a circular-economy decision.",
+    kind: "scenario",
+    scenarioId: "circular-economy",
+    prerequisiteIds: ["digital-twin"],
+    competencyIds: ["circularity-data"],
+  },
+  {
+    id: "mastery-gate",
+    title: "Dataspace Troubleshooter",
+    description: "Finish the learning path and prove you can diagnose failures, not just click through happy paths.",
+    kind: "mastery",
+    prerequisiteIds: ["foundation-pcf", "digital-twin", "demand-capacity", "traceability", "quality", "circularity"],
+    competencyIds: ["diagnostics"],
+  },
+];
+
+export const competencies: CompetencyDefinition[] = [
+  {
+    id: "dataspace-foundations",
+    label: "Dataspace Foundations",
+    description: "Can explain governed data exchange in plain business language.",
+    scenarioId: "battery-pcf",
+  },
+  {
+    id: "digital-twin-literacy",
+    label: "Digital Twin Literacy",
+    description: "Understands how physical assets connect to discoverable digital representations and submodels.",
+    scenarioId: "digital-twin",
+  },
+  {
+    id: "planning-exchange",
+    label: "Planning Data Exchange",
+    description: "Understands sovereign demand and capacity collaboration across company boundaries.",
+    scenarioId: "demand-capacity",
+  },
+  {
+    id: "traceability",
+    label: "Cross-company Traceability",
+    description: "Can follow asset relationships across participants and identify where controlled exchange is required.",
+    scenarioId: "traceability",
+  },
+  {
+    id: "quality-collaboration",
+    label: "Quality Collaboration",
+    description: "Can explain how shared meaning and governed access support quality investigations.",
+    scenarioId: "quality",
+  },
+  {
+    id: "circularity-data",
+    label: "Circularity Data",
+    description: "Understands how trusted product information supports passport and circular-economy decisions.",
+    scenarioId: "circular-economy",
+  },
+  {
+    id: "diagnostics",
+    label: "Dataspace Diagnostics",
+    description: "Has scored at least 70 in three Boss Fights.",
+    bossThreshold: 70,
+    bossCount: 3,
+  },
+];
