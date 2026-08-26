@@ -17,6 +17,22 @@ test.describe("learner journey", () => {
     await expect(page.locator("a.scenario-card")).toHaveCount(6);
   });
 
+  test("all six shipped scenarios resolve to their own simulator content", async ({ page }) => {
+    for (const scenarioId of [
+      "battery-pcf",
+      "digital-twin",
+      "traceability",
+      "demand-capacity",
+      "quality",
+      "circular-economy",
+    ]) {
+      await page.goto(`/learn/${scenarioId}`);
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      await expect(page.getByText(/Step 1 of/i)).toBeVisible();
+      await expect(page.locator("select").first()).toHaveValue(scenarioId);
+    }
+  });
+
   test("a learner can open the Battery PCF simulator and switch to beginner language", async ({ page }) => {
     await page.goto("/learn/battery-pcf");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
