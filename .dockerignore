@@ -1,0 +1,15 @@
+.git
+.github
+.next
+node_modules
+npm-debug.log*
+*.log
+.env
+.env.*
+!.env.example
+apps/api/.venv
+apps/api/__pycache__
+apps/api/**/*.pyc
+apps/api/*.db
+playwright-report
+test-results
