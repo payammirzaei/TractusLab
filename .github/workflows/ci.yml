@@ -24,6 +24,11 @@ jobs:
       - name: Install API dependencies
         run: pip install -r apps/api/requirements.txt
 
+      - name: Audit Python dependencies
+        run: |
+          python -m pip install pip-audit
+          pip-audit -r apps/api/requirements.txt
+
       - name: Verify Alembic migration
         working-directory: apps/api
         run: |
@@ -44,6 +49,9 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+
+      - name: Audit web dependencies
+        run: npm audit --audit-level=high
 
       - name: Validate scenario content
         run: npm run content:validate
