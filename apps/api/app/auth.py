@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pwdlib import PasswordHash
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -12,10 +13,20 @@ from .db import get_db
 from .models import AuthSession, User
 
 bearer = HTTPBearer(auto_error=False)
+password_hasher = PasswordHash.recommended()
+DUMMY_PASSWORD_HASH = password_hasher.hash("tractuslab-dummy-password")
 
 
 def hash_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def hash_password(password: str) -> str:
+    return password_hasher.hash(password)
+
+
+def verify_password(password: str, password_hash: str | None) -> bool:
+    return password_hasher.verify(password, password_hash or DUMMY_PASSWORD_HASH)
 
 
 def create_auth_session(db: Session, user: User) -> str:
@@ -30,10 +41,10 @@ def create_auth_session(db: Session, user: User) -> str:
     return token
 
 
-def get_current_user(
+def get_current_session(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
     db: Session = Depends(get_db),
-) -> User:
+) -> AuthSession:
     if credentials is None or credentials.scheme.lower() != "bearer":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
 
@@ -50,7 +61,13 @@ def get_current_user(
         db.delete(auth_session)
         db.commit()
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired")
+    return auth_session
 
+
+def get_current_user(
+    auth_session: AuthSession = Depends(get_current_session),
+    db: Session = Depends(get_db),
+) -> User:
     user = db.get(User, auth_session.user_id)
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session")
