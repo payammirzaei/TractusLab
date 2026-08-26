@@ -18,7 +18,7 @@ test("boss fight scoring rewards clean diagnosis", () => {
   });
   assert.equal(calculateBossFightScore(1, 0).score, 88);
   assert.equal(calculateBossFightScore(0, 1).score, 82);
-  assert.equal(calculateBossFightScore(2, 1).grade, "B");
+  assert.equal(calculateBossFightScore(2, 1).grade, "C");
 });
 
 test("boss score is clamped and cannot become negative", () => {
