@@ -1,4 +1,4 @@
-import { glossary } from "@/data/scenarios";
+import { glossary } from "@/data/glossary";
 
 export function Glossary({ terms }: { terms: string[] }) {
   const uniqueTerms = [...new Set(terms)].filter((term) => term in glossary);
