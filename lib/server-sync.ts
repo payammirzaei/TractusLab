@@ -86,7 +86,9 @@ export async function registerAccount(input: { email: string; password: string; 
     const body = (await response.json().catch(() => ({}))) as { detail?: string };
     throw new Error(body.detail || `Registration failed: ${response.status}`);
   }
-  return (await response.json()) as AccountUser;
+  const body = (await response.json()) as { access_token: string; user: AccountUser };
+  if (typeof window !== "undefined") window.localStorage.setItem(SESSION_TOKEN_KEY, body.access_token);
+  return body.user;
 }
 
 export async function loginAccount(email: string, password: string): Promise<AccountUser> {
