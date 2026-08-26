@@ -1,12 +1,13 @@
 {
   "name": "tractuslab",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start -p ${PORT:-3000}",
     "test": "tsx --test tests/*.test.ts",
+    "content:validate": "tsx scripts/validate-content.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
