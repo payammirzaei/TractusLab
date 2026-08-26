@@ -65,6 +65,24 @@ test.describe("learner journey", () => {
     await expect(page.getByRole("heading", { level: 1, name: displayName })).toBeVisible();
   });
 
+  test("authoring studio can create and restore a local draft", async ({ page }) => {
+    const title = `E2E scenario ${Date.now()}`;
+
+    await page.goto("/author");
+    await expect(page.getByRole("heading", { level: 1, name: /Write like a teacher/i })).toBeVisible();
+    await page.getByRole("button", { name: /New scenario/i }).click();
+    await page.getByLabel("Title").fill(title);
+    await expect(page.getByRole("heading", { level: 2, name: title })).toBeVisible();
+
+    await page.getByRole("button", { name: /Save local draft/i }).click();
+    await expect(page.getByText(/Draft saved locally/i)).toBeVisible();
+
+    await page.reload();
+    await page.getByRole("button", { name: /Restore saved draft/i }).click();
+    await expect(page.getByLabel("Title")).toHaveValue(title);
+    await expect(page.getByRole("heading", { level: 2, name: title })).toBeVisible();
+  });
+
   test("unknown routes have a useful recovery path", async ({ page }) => {
     const response = await page.goto("/this-route-does-not-exist");
     expect(response?.status()).toBe(404);
