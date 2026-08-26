@@ -28,6 +28,17 @@ test.describe("learner journey", () => {
     await expect(page.getByText(/What this means/i)).toBeVisible();
   });
 
+  test("learner progress survives a browser reload", async ({ page }) => {
+    await page.goto("/learn/battery-pcf");
+    await expect(page.getByText(/Step 1 of/i)).toBeVisible();
+
+    await page.getByRole("button", { name: /Step 3/i }).click();
+    await expect(page.getByText(/Step 3 of/i)).toBeVisible();
+
+    await page.reload();
+    await expect(page.getByText(/Step 3 of/i)).toBeVisible();
+  });
+
   test("keyboard users can skip repeated navigation", async ({ page }) => {
     await page.goto("/");
     await page.keyboard.press("Tab");
