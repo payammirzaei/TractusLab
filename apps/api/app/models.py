@@ -11,10 +11,16 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    email: Mapped[str | None] = mapped_column(String(320), nullable=True, unique=True, index=True)
+    password_hash: Mapped[str | None] = mapped_column(String(512), nullable=True)
     display_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     sessions: Mapped[list["AuthSession"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+
+    @property
+    def is_guest(self) -> bool:
+        return self.email is None or self.password_hash is None
 
 
 class AuthSession(Base):
