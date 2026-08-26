@@ -42,8 +42,9 @@ test.describe("learner journey", () => {
   test("a learner can finish a scenario and solve its complete Boss Fight", async ({ page }) => {
     await page.goto("/learn/battery-pcf");
     await page.getByRole("button", { name: /Step 7/i }).click();
-    await expect(page.getByText(/Step 7 of/i)).toBeVisible();
-    await page.getByRole("button", { name: /Transfer the PCF data/i }).click();
+    const transferAction = page.getByRole("button", { name: /Transfer the PCF data/i });
+    await expect(transferAction).toBeVisible();
+    await transferAction.click();
 
     await expect(page.getByText(/Learning flow complete/i)).toBeVisible();
     await page.getByRole("button", { name: /Start Boss Fight/i }).click();
@@ -85,14 +86,14 @@ test.describe("learner journey", () => {
     await page.getByRole("button", { name: "Create account" }).click();
 
     await expect(page.getByRole("heading", { level: 1, name: displayName })).toBeVisible();
-    await page.getByRole("button", { name: "Sign out" }).click();
+    await page.getByRole("button", { name: "Sign out", exact: true }).click();
     await expect(page).toHaveURL(/\/$/);
 
     await page.goto("/account");
     await page.getByRole("tab", { name: "Sign in" }).click();
     await page.locator("#email").fill(email);
     await page.locator("#password").fill(password);
-    await page.getByRole("button", { name: "Sign in" }).click();
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
 
     await expect(page).toHaveURL(/\/profile$/);
     await expect(page.getByRole("heading", { level: 1, name: displayName })).toBeVisible();
