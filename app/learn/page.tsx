@@ -1,5 +1,6 @@
 import { LearnSimulatorV2 } from "@/components/LearnSimulatorV2";
+import { RuntimeContentGate } from "@/components/RuntimeContentGate";
 
 export default function LearnPage() {
-  return <LearnSimulatorV2 />;
+  return <RuntimeContentGate><LearnSimulatorV2 /></RuntimeContentGate>;
 }

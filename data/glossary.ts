@@ -1,4 +1,4 @@
-import { glossary as coreGlossary } from "./scenarios";
+import { glossary as coreGlossary } from "../content/scenarios";
 
 export const glossary = {
   ...coreGlossary,

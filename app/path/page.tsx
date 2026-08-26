@@ -1,5 +1,6 @@
 import { CurriculumPath } from "@/components/CurriculumPath";
+import { RuntimeContentGate } from "@/components/RuntimeContentGate";
 
 export default function LearningPathPage() {
-  return <CurriculumPath />;
+  return <RuntimeContentGate><CurriculumPath /></RuntimeContentGate>;
 }
