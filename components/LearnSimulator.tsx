@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DataspaceMap } from "@/components/DataspaceMap";
 import { DepthSwitcher } from "@/components/DepthSwitcher";
 import { Glossary } from "@/components/Glossary";
+import { useLearningProgress } from "@/components/useLearningProgress";
 import { getScenarioById, learningScenarios } from "@/data/catalog";
 import {
   evaluateChallenge,
@@ -26,6 +27,8 @@ export function LearnSimulator({ initialScenarioId }: { initialScenarioId?: stri
   const [challengeIndex, setChallengeIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [showHint, setShowHint] = useState(false);
+  const [restoredScenarioId, setRestoredScenarioId] = useState<string | null>(null);
+  const { progress: savedProgress, ready: progressReady, recordStep, solveChallenge } = useLearningProgress();
 
   const scenario = useMemo(() => getScenarioById(scenarioId), [scenarioId]);
   const complete = isScenarioComplete(stepIndex, scenario.steps.length);
@@ -33,6 +36,21 @@ export function LearnSimulator({ initialScenarioId }: { initialScenarioId?: stri
   const progress = progressPercent(stepIndex, scenario.steps.length);
   const challenge = scenario.challenges[Math.min(challengeIndex, scenario.challenges.length - 1)];
   const challengeResult = selectedOption && challenge ? evaluateChallenge(challenge, selectedOption) : null;
+  const persistedScenario = savedProgress[scenario.id];
+
+  useEffect(() => {
+    if (!progressReady || restoredScenarioId === scenario.id) return;
+    const saved = savedProgress[scenario.id];
+    if (saved && !saved.completed && saved.maxStep > 0) {
+      setStepIndex(Math.min(saved.maxStep, Math.max(scenario.steps.length - 1, 0)));
+    }
+    setRestoredScenarioId(scenario.id);
+  }, [progressReady, restoredScenarioId, savedProgress, scenario.id, scenario.steps.length]);
+
+  useEffect(() => {
+    if (!progressReady) return;
+    recordStep(scenario.id, stepIndex, scenario.steps.length);
+  }, [progressReady, recordStep, scenario.id, scenario.steps.length, stepIndex]);
 
   function resetScenario(nextScenarioId = scenario.id) {
     setScenarioId(nextScenarioId);
@@ -41,6 +59,7 @@ export function LearnSimulator({ initialScenarioId }: { initialScenarioId?: stri
     setChallengeIndex(0);
     setSelectedOption(null);
     setShowHint(false);
+    setRestoredScenarioId(null);
   }
 
   function startChallenges() {
@@ -49,6 +68,13 @@ export function LearnSimulator({ initialScenarioId }: { initialScenarioId?: stri
     setChallengeIndex(0);
     setSelectedOption(null);
     setShowHint(false);
+  }
+
+  function chooseChallengeOption(optionId: string) {
+    setSelectedOption(optionId);
+    if (challenge && evaluateChallenge(challenge, optionId).correct) {
+      solveChallenge(scenario.id, challenge.id);
+    }
   }
 
   function nextChallenge() {
@@ -95,6 +121,12 @@ export function LearnSimulator({ initialScenarioId }: { initialScenarioId?: stri
                 <span>{scenario.asset}</span>
                 <span>•</span>
                 <span>{mode === "learn" ? `${progress}% complete` : `Challenge ${challengeIndex + 1}/${scenario.challenges.length}`}</span>
+                {progressReady && persistedScenario && (
+                  <>
+                    <span>•</span>
+                    <span>{persistedScenario.solvedChallenges.length}/{scenario.challenges.length} fixes saved</span>
+                  </>
+                )}
               </div>
               <h1 className="mt-3 max-w-4xl text-3xl font-semibold tracking-[-0.035em] md:text-5xl">{scenario.title}</h1>
               <p className="mt-3 max-w-3xl leading-7 text-white/55">{scenario.goal}</p>
@@ -189,7 +221,7 @@ export function LearnSimulator({ initialScenarioId }: { initialScenarioId?: stri
                   return (
                     <button
                       key={option.id}
-                      onClick={() => setSelectedOption(option.id)}
+                      onClick={() => chooseChallengeOption(option.id)}
                       className={`w-full rounded-2xl border p-4 text-left transition ${
                         selected
                           ? challengeResult?.correct
@@ -217,7 +249,7 @@ export function LearnSimulator({ initialScenarioId }: { initialScenarioId?: stri
 
               {challengeResult?.correct && (
                 <div className="mt-5 rounded-2xl border border-emerald-300/20 bg-emerald-300/[0.07] p-4">
-                  <p className="text-sm font-semibold text-emerald-200">Root cause found</p>
+                  <p className="text-sm font-semibold text-emerald-200">Root cause found · saved locally</p>
                   <p className="mt-2 text-sm leading-6 text-white/58">{challenge.rootCause}</p>
                   <button onClick={nextChallenge} className="mt-4 rounded-full bg-emerald-300 px-5 py-2.5 text-sm font-semibold text-[#07110f]">
                     {challengeIndex === scenario.challenges.length - 1 ? "Finish challenges" : "Next challenge"} →
@@ -287,7 +319,7 @@ function CompletionCard({
   return (
     <div className="flex min-h-[560px] flex-col justify-center">
       <div className="text-5xl">✓</div>
-      <p className="mt-5 text-sm font-semibold text-emerald-300">Learning flow complete</p>
+      <p className="mt-5 text-sm font-semibold text-emerald-300">Learning flow complete · saved locally</p>
       <h2 className="mt-3 text-3xl font-semibold tracking-[-0.03em]">You can now explain the {scenarioTitle} flow without starting from acronyms.</h2>
       <p className="mt-5 leading-7 text-white/58">Next, diagnose a broken simulated flow. That is where the concepts become operational knowledge.</p>
       <div className="mt-7 flex flex-wrap gap-3">

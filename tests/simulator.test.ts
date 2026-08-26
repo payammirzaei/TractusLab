@@ -117,10 +117,12 @@ test("shipped learning scenarios satisfy structural validation", () => {
 });
 
 test("scenario catalog has unique ids and safe fallback behavior", () => {
-  assert.equal(scenarioCount(), 4);
+  assert.equal(scenarioCount(), 6);
   assert.equal(new Set(learningScenarios.map((scenario) => scenario.id)).size, learningScenarios.length);
   assert.equal(getScenarioById("traceability").id, "traceability");
   assert.equal(getScenarioById("demand-capacity").id, "demand-capacity");
+  assert.equal(getScenarioById("quality-management").id, "quality-management");
+  assert.equal(getScenarioById("circular-economy").id, "circular-economy");
   assert.equal(getScenarioById("missing-scenario").id, learningScenarios[0].id);
 });
 
@@ -134,4 +136,14 @@ test("every shipped scenario contains learning and diagnostic content", () => {
       assert.ok(step.withoutIt.trim().length > 10, `${scenario.id}/${step.id} needs a skip consequence`);
     }
   }
+});
+
+test("quality and circularity scenarios expose distinct diagnostic failures", () => {
+  const quality = getScenarioById("quality-management");
+  const circularity = getScenarioById("circular-economy");
+
+  assert.ok(quality.challenges.some((challenge) => challenge.id.includes("policy")));
+  assert.ok(quality.challenges.some((challenge) => challenge.id.includes("schema")));
+  assert.ok(circularity.challenges.some((challenge) => challenge.id.includes("passport")));
+  assert.ok(circularity.challenges.some((challenge) => challenge.id.includes("model")));
 });

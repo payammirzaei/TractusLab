@@ -1,11 +1,15 @@
 import { learningScenarios as coreScenarios } from "./scenarios";
 import { traceabilityScenario } from "./traceability";
 import { demandCapacityScenario } from "./demand-capacity";
+import { qualityScenario } from "./quality";
+import { circularEconomyScenario } from "./circular-economy";
 
 export const learningScenarios = [
   ...coreScenarios,
   traceabilityScenario,
   demandCapacityScenario,
+  qualityScenario,
+  circularEconomyScenario,
 ];
 
 export function getScenarioById(id: string | null | undefined) {

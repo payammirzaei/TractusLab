@@ -25,7 +25,7 @@ export default function HomePage() {
             <Link href="/learn/battery-pcf" className="rounded-full border border-white/15 px-6 py-3 font-medium text-white/75">Start with Battery CO₂</Link>
           </div>
           <div className="mt-9 flex flex-wrap gap-2 text-xs text-white/38">
-            {['Battery PCF / CO₂', 'Digital Twin', 'Traceability', 'Demand & Capacity', 'Manager → Developer depth', 'Break & Fix'].map((item) => (
+            {['Battery PCF / CO₂', 'Digital Twin', 'Traceability', 'Demand & Capacity', 'Quality', 'Circular Economy', 'Manager → Developer depth', 'Break & Fix'].map((item) => (
               <span key={item} className="rounded-full border border-white/10 bg-white/[0.025] px-3 py-1.5">{item}</span>
             ))}
           </div>
