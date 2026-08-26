@@ -1,6 +1,7 @@
 from fastapi import Depends, FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import delete, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .auth import create_auth_session, get_current_session, get_current_user, hash_password, verify_password
@@ -64,12 +65,12 @@ def create_guest_session(payload: GuestSessionRequest, db: Session = Depends(get
     return SessionResponse(access_token=token, user=user_response(user))
 
 
-@app.post("/v1/auth/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@app.post("/v1/auth/register", response_model=SessionResponse, status_code=status.HTTP_201_CREATED)
 def register_account(
     payload: RegisterRequest,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-) -> UserResponse:
+) -> SessionResponse:
     if not user.is_guest:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Current user already has an account")
 
@@ -83,9 +84,18 @@ def register_account(
         display_name = payload.display_name.strip()
         user.display_name = display_name or None
     db.add(user)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="An account with this email already exists") from exc
     db.refresh(user)
-    return user_response(user)
+
+    # Rotate all pre-registration guest sessions to prevent session fixation.
+    db.execute(delete(AuthSession).where(AuthSession.user_id == user.id))
+    db.commit()
+    token = create_auth_session(db, user)
+    return SessionResponse(access_token=token, user=user_response(user))
 
 
 @app.post("/v1/auth/login", response_model=SessionResponse)
