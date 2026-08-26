@@ -9,13 +9,17 @@ TractusLab is an interactive, simulation-first learning environment for Tractus-
 - Business-first manager journey
 - Manager / Architect / Developer depth switcher
 - Persistent Dataspace Map with highlighted components
+- Scenario hub with direct scenario links
 - Battery Product Carbon Footprint (PCF / CO₂) scenario
 - Digital Twin discovery scenario
+- Parts Traceability / quality-incident scenario
+- Demand & Capacity Management scenario
 - Why-is-this-needed / what-if-we-skip-it explanations
 - Contextual glossary
 - Break & Fix challenges with hints and root-cause feedback
 - Scenario-driven content model
-- Pure simulation logic with Node tests
+- Local-first progress model ready for UI persistence
+- Pure simulator logic with automated tests
 
 ## Run locally
 
@@ -24,17 +28,15 @@ npm install
 npm run dev
 ```
 
-## Test
+## Verify
 
 ```bash
 npm test
-```
-
-## Build
-
-```bash
+npm run typecheck
 npm run build
 ```
+
+CI runs the same verification on pull requests and can also be triggered manually.
 
 ## Product direction
 
