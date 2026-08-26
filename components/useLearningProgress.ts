@@ -8,19 +8,36 @@ import {
   updateStepProgress,
   type LearningProgress,
 } from "@/lib/progress";
+import {
+  clearRemoteProgress,
+  loadRemoteState,
+  mergeProgress,
+  syncLearningProgress,
+} from "@/lib/server-sync";
 
 export function useLearningProgress() {
   const [progress, setProgress] = useState<LearningProgress>({});
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    setProgress(parseProgress(window.localStorage.getItem(PROGRESS_STORAGE_KEY)));
+    const local = parseProgress(window.localStorage.getItem(PROGRESS_STORAGE_KEY));
+    setProgress(local);
     setReady(true);
+
+    void loadRemoteState()
+      .then((remote) => {
+        if (!remote) return;
+        const merged = mergeProgress(local, remote.progress);
+        setProgress(merged);
+        return syncLearningProgress(merged);
+      })
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {
     if (!ready) return;
     window.localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(progress));
+    void syncLearningProgress(progress).catch(() => undefined);
   }, [progress, ready]);
 
   const recordStep = useCallback((scenarioId: string, stepIndex: number, stepCount: number) => {
@@ -34,6 +51,7 @@ export function useLearningProgress() {
   const clearProgress = useCallback(() => {
     setProgress({});
     window.localStorage.removeItem(PROGRESS_STORAGE_KEY);
+    void clearRemoteProgress().catch(() => undefined);
   }, []);
 
   return { progress, ready, recordStep, solveChallenge, clearProgress };

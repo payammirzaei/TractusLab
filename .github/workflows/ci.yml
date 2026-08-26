@@ -10,11 +10,24 @@ on:
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install API dependencies
+        run: pip install -r apps/api/requirements.txt
+
+      - name: Run API tests
+        run: pytest -q apps/api/tests
+        env:
+          PYTHONPATH: apps/api
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
