@@ -6,6 +6,17 @@ class Settings(BaseSettings):
     database_url: str = "sqlite+pysqlite:///./tractuslab.db"
     frontend_origin: str = "http://localhost:3000"
     session_ttl_days: int = 30
+    password_reset_ttl_minutes: int = 30
+    email_verification_ttl_hours: int = 24
+    expose_dev_tokens: bool = False
+
+    email_delivery_mode: str = "disabled"
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_username: str | None = None
+    smtp_password: str | None = None
+    smtp_from_email: str = "noreply@tractuslab.local"
+    smtp_use_tls: bool = True
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

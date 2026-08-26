@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, EmailStr, Field
 
 
@@ -16,17 +18,52 @@ class LoginRequest(BaseModel):
     password: str = Field(min_length=1, max_length=128)
 
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=10, max_length=128)
+
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetConfirmRequest(BaseModel):
+    token: str = Field(min_length=20, max_length=256)
+    new_password: str = Field(min_length=10, max_length=128)
+
+
+class EmailVerificationConfirmRequest(BaseModel):
+    token: str = Field(min_length=20, max_length=256)
+
+
 class UserResponse(BaseModel):
     id: str
     email: str | None
     display_name: str | None
     is_guest: bool
+    email_verified: bool
 
 
 class SessionResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
+
+
+class EmailActionResponse(BaseModel):
+    message: str
+    debug_token: str | None = None
+
+
+class SessionInfo(BaseModel):
+    id: str
+    current: bool
+    created_at: datetime
+    expires_at: datetime
+
+
+class SessionsResponse(BaseModel):
+    sessions: list[SessionInfo]
 
 
 class UserUpdate(BaseModel):

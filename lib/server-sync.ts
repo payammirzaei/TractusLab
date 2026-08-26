@@ -12,6 +12,24 @@ export type AccountUser = {
   email: string | null;
   display_name: string | null;
   is_guest: boolean;
+  email_verified: boolean;
+};
+
+export type AccountSession = {
+  id: string;
+  current: boolean;
+  created_at: string;
+  expires_at: string;
+};
+
+export type EmailActionResult = {
+  message: string;
+  debug_token: string | null;
+};
+
+type SessionPayload = {
+  access_token: string;
+  user: AccountUser;
 };
 
 type RemoteProgress = {
@@ -31,6 +49,13 @@ export function serverSyncEnabled(): boolean {
   return Boolean(API_URL);
 }
 
+function storeSession(payload: SessionPayload): AccountUser {
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem(SESSION_TOKEN_KEY, payload.access_token);
+  }
+  return payload.user;
+}
+
 async function createGuestSession(): Promise<string | null> {
   if (!API_URL || typeof window === "undefined") return null;
   const response = await fetch(`${API_URL}/v1/session/guest`, {
@@ -39,7 +64,7 @@ async function createGuestSession(): Promise<string | null> {
     body: JSON.stringify({}),
   });
   if (!response.ok) throw new Error(`Session creation failed: ${response.status}`);
-  const body = (await response.json()) as { access_token: string };
+  const body = (await response.json()) as SessionPayload;
   window.localStorage.setItem(SESSION_TOKEN_KEY, body.access_token);
   return body.access_token;
 }
@@ -70,10 +95,15 @@ async function apiFetch(path: string, init: RequestInit = {}, retry = true): Pro
   return response;
 }
 
+async function errorMessage(response: Response, fallback: string): Promise<string> {
+  const body = (await response.json().catch(() => ({}))) as { detail?: string };
+  return body.detail || fallback;
+}
+
 export async function getCurrentAccount(): Promise<AccountUser | null> {
   if (!API_URL) return null;
   const response = await apiFetch("/v1/me");
-  if (!response.ok) throw new Error(`Account load failed: ${response.status}`);
+  if (!response.ok) throw new Error(await errorMessage(response, `Account load failed: ${response.status}`));
   return (await response.json()) as AccountUser;
 }
 
@@ -82,13 +112,8 @@ export async function registerAccount(input: { email: string; password: string; 
     method: "POST",
     body: JSON.stringify({ email: input.email, password: input.password, display_name: input.displayName || null }),
   });
-  if (!response.ok) {
-    const body = (await response.json().catch(() => ({}))) as { detail?: string };
-    throw new Error(body.detail || `Registration failed: ${response.status}`);
-  }
-  const body = (await response.json()) as { access_token: string; user: AccountUser };
-  if (typeof window !== "undefined") window.localStorage.setItem(SESSION_TOKEN_KEY, body.access_token);
-  return body.user;
+  if (!response.ok) throw new Error(await errorMessage(response, `Registration failed: ${response.status}`));
+  return storeSession((await response.json()) as SessionPayload);
 }
 
 export async function loginAccount(email: string, password: string): Promise<AccountUser> {
@@ -98,14 +123,10 @@ export async function loginAccount(email: string, password: string): Promise<Acc
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
-  if (!response.ok) {
-    const body = (await response.json().catch(() => ({}))) as { detail?: string };
-    throw new Error(body.detail || "Login failed");
-  }
-  const body = (await response.json()) as { access_token: string; user: AccountUser };
-  window.localStorage.setItem(SESSION_TOKEN_KEY, body.access_token);
+  if (!response.ok) throw new Error(await errorMessage(response, "Login failed"));
+  const body = (await response.json()) as SessionPayload;
   clearLocalLearningCache();
-  return body.user;
+  return storeSession(body);
 }
 
 export async function logoutAccount(): Promise<void> {
@@ -114,6 +135,73 @@ export async function logoutAccount(): Promise<void> {
   if (!response.ok && response.status !== 401) throw new Error(`Logout failed: ${response.status}`);
   window.localStorage.removeItem(SESSION_TOKEN_KEY);
   clearLocalLearningCache();
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<AccountUser> {
+  const response = await apiFetch("/v1/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+  });
+  if (!response.ok) throw new Error(await errorMessage(response, "Password change failed"));
+  return storeSession((await response.json()) as SessionPayload);
+}
+
+export async function requestPasswordReset(email: string): Promise<EmailActionResult> {
+  if (!API_URL) throw new Error("Account backend is not configured");
+  const response = await fetch(`${API_URL}/v1/auth/password-reset/request`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  if (!response.ok) throw new Error(await errorMessage(response, "Password reset request failed"));
+  return (await response.json()) as EmailActionResult;
+}
+
+export async function confirmPasswordReset(token: string, newPassword: string): Promise<AccountUser> {
+  if (!API_URL) throw new Error("Account backend is not configured");
+  const response = await fetch(`${API_URL}/v1/auth/password-reset/confirm`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, new_password: newPassword }),
+  });
+  if (!response.ok) throw new Error(await errorMessage(response, "Password reset failed"));
+  const body = (await response.json()) as SessionPayload;
+  clearLocalLearningCache();
+  return storeSession(body);
+}
+
+export async function requestEmailVerification(): Promise<EmailActionResult> {
+  const response = await apiFetch("/v1/auth/email-verification/request", { method: "POST" });
+  if (!response.ok) throw new Error(await errorMessage(response, "Verification request failed"));
+  return (await response.json()) as EmailActionResult;
+}
+
+export async function confirmEmailVerification(token: string): Promise<AccountUser> {
+  if (!API_URL) throw new Error("Account backend is not configured");
+  const response = await fetch(`${API_URL}/v1/auth/email-verification/confirm`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token }),
+  });
+  if (!response.ok) throw new Error(await errorMessage(response, "Email verification failed"));
+  return (await response.json()) as AccountUser;
+}
+
+export async function listAccountSessions(): Promise<AccountSession[]> {
+  const response = await apiFetch("/v1/auth/sessions");
+  if (!response.ok) throw new Error(await errorMessage(response, "Session list failed"));
+  const body = (await response.json()) as { sessions: AccountSession[] };
+  return body.sessions;
+}
+
+export async function revokeAccountSession(sessionId: string): Promise<void> {
+  const response = await apiFetch(`/v1/auth/sessions/${encodeURIComponent(sessionId)}`, { method: "DELETE" });
+  if (!response.ok) throw new Error(await errorMessage(response, "Session revoke failed"));
+}
+
+export async function revokeOtherAccountSessions(): Promise<void> {
+  const response = await apiFetch("/v1/auth/sessions/revoke-others", { method: "POST" });
+  if (!response.ok) throw new Error(await errorMessage(response, "Session revoke failed"));
 }
 
 export function clearLocalLearningCache(): void {
