@@ -42,26 +42,35 @@ def test_authentication_is_required() -> None:
         assert client.get("/v1/state").status_code == 401
 
 
-def test_guest_can_register_without_losing_progress() -> None:
+def test_guest_can_register_without_losing_progress_and_session_rotates() -> None:
     with TestClient(app) as client:
-        headers, guest = guest_session(client)
+        old_headers, guest = guest_session(client)
         client.put(
             "/v1/progress/battery-pcf",
-            headers=headers,
+            headers=old_headers,
             json={"max_step": 4, "completed": True, "solved_challenges": ["policy"]},
         )
         registered = client.post(
             "/v1/auth/register",
-            headers=headers,
+            headers=old_headers,
             json={"email": " PAYAM@example.com ", "password": "correct-horse-battery", "display_name": "Payam"},
         )
         assert registered.status_code == 201
         body = registered.json()
-        assert body["id"] == guest["user"]["id"]
-        assert body["email"] == "payam@example.com"
-        assert body["is_guest"] is False
-        state = client.get("/v1/state", headers=headers).json()
+        assert body["user"]["id"] == guest["user"]["id"]
+        assert body["user"]["email"] == "payam@example.com"
+        assert body["user"]["is_guest"] is False
+        assert body["access_token"] != guest["access_token"]
+        assert client.get("/v1/me", headers=old_headers).status_code == 401
+
+        new_headers = {"Authorization": f"Bearer {body['access_token']}"}
+        state = client.get("/v1/state", headers=new_headers).json()
         assert state["progress"]["battery-pcf"]["completed"] is True
+        assert client.post(
+            "/v1/auth/register",
+            headers=new_headers,
+            json={"email": "other@example.com", "password": "another-secure-password"},
+        ).status_code == 409
 
         with SessionLocal() as db:
             user = db.scalar(select(User).where(User.email == "payam@example.com"))
