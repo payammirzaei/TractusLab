@@ -14,6 +14,7 @@ class User(Base):
     email: Mapped[str | None] = mapped_column(String(320), nullable=True, unique=True, index=True)
     password_hash: Mapped[str | None] = mapped_column(String(512), nullable=True)
     display_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    role: Mapped[str] = mapped_column(String(24), nullable=False, default="learner", index=True)
     email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -73,3 +74,37 @@ class BossScore(Base):
     scenario_id: Mapped[str] = mapped_column(String(120), index=True)
     score: Mapped[int] = mapped_column(Integer)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class ScenarioContent(Base):
+    __tablename__ = "scenario_content"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    scenario_id: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    title: Mapped[str] = mapped_column(String(240))
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="draft", index=True)
+    latest_revision: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    published_revision: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_by_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    revisions: Mapped[list["ScenarioRevision"]] = relationship(back_populates="content", cascade="all, delete-orphan")
+
+
+class ScenarioRevision(Base):
+    __tablename__ = "scenario_revisions"
+    __table_args__ = (UniqueConstraint("content_id", "revision_number", name="uq_content_revision"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    content_id: Mapped[str] = mapped_column(ForeignKey("scenario_content.id", ondelete="CASCADE"), index=True)
+    revision_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    state: Mapped[str] = mapped_column(String(32), nullable=False, default="draft", index=True)
+    document: Mapped[dict] = mapped_column(JSON, nullable=False)
+    created_by_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), index=True)
+    review_note: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    reviewed_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    content: Mapped[ScenarioContent] = relationship(back_populates="revisions")

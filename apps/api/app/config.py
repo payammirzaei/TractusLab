@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     password_reset_ttl_minutes: int = 30
     email_verification_ttl_hours: int = 24
     expose_dev_tokens: bool = False
+    content_admin_emails: str = ""
 
     email_delivery_mode: str = "disabled"
     smtp_host: str | None = None

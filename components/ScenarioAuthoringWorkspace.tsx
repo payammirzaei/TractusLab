@@ -8,6 +8,7 @@ import {
   useState,
   type ChangeEvent,
 } from "react";
+import { ServerContentWorkflow } from "@/components/ServerContentWorkflow";
 import { scenarioDocuments } from "@/data/content-registry";
 import {
   CONTENT_DRAFT_STORAGE_KEY,
@@ -108,19 +109,30 @@ export function ScenarioAuthoringWorkspace() {
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link href="/" className="font-semibold tracking-tight">← TractusLab</Link>
-            <span className="rounded-full border border-amber-300/20 bg-amber-300/[0.05] px-3 py-1 text-xs text-amber-100/70">Internal authoring lab</span>
+            <span className="rounded-full border border-amber-300/20 bg-amber-300/[0.05] px-3 py-1 text-xs text-amber-100/70">Internal authoring studio</span>
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
-            <Link href="/scenarios" className="rounded-full border border-white/10 px-3 py-1.5 text-white/50">Scenario Hub</Link>
+            <Link href="/scenarios" className="rounded-full border border-white/10 px-3 py-1.5 text-white/50 transition hover:text-white/80">Scenario Hub</Link>
             <span className="rounded-full border border-white/10 px-3 py-1.5 text-white/35">Schema v1.0</span>
           </div>
         </header>
 
-        <section className="py-9">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-300">Content workspace</p>
-          <h1 className="mt-3 max-w-4xl text-4xl font-semibold tracking-[-0.04em] md:text-6xl">Author scenarios without touching simulator code.</h1>
-          <p className="mt-4 max-w-3xl text-base leading-7 text-white/48">Packaged scenarios are read-only source content. Clone one, create a draft, validate the contract, preview the learning depths, then export canonical JSON for review or later publishing.</p>
+        <section className="py-9 md:py-11">
+          <div className="flex flex-wrap items-end justify-between gap-6">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-300">Content studio</p>
+              <h1 className="mt-3 max-w-4xl text-4xl font-semibold tracking-[-0.04em] md:text-6xl">Write fast locally. Publish carefully as a team.</h1>
+              <p className="mt-4 max-w-3xl text-base leading-7 text-white/48">Local editing stays instant. Server workflow adds roles, revisions and review only when content is ready to move toward production.</p>
+            </div>
+            <div className="grid min-w-[260px] grid-cols-3 gap-2 text-center text-[10px] uppercase tracking-[0.12em] text-white/35">
+              <div className="rounded-2xl border border-white/8 bg-white/[0.02] px-3 py-3"><span className="block text-base font-semibold text-white/70">1</span>Edit</div>
+              <div className="rounded-2xl border border-white/8 bg-white/[0.02] px-3 py-3"><span className="block text-base font-semibold text-white/70">2</span>Review</div>
+              <div className="rounded-2xl border border-white/8 bg-white/[0.02] px-3 py-3"><span className="block text-base font-semibold text-white/70">3</span>Publish</div>
+            </div>
+          </div>
         </section>
+
+        <ServerContentWorkflow document={document} />
 
         <section className="grid gap-4 xl:grid-cols-[250px_minmax(0,1.05fr)_minmax(340px,.95fr)]">
           <aside className="rounded-[1.75rem] border border-white/10 bg-white/[0.025] p-4">
@@ -146,8 +158,8 @@ export function ScenarioAuthoringWorkspace() {
             </div>
 
             <div className="mt-5 border-t border-white/10 pt-4">
-              <button type="button" onClick={createDraft} className="w-full rounded-full bg-emerald-300 px-4 py-2.5 text-sm font-semibold text-[#07110f]">+ New scenario</button>
-              <button type="button" onClick={() => fileInputRef.current?.click()} className="mt-2 w-full rounded-full border border-white/12 px-4 py-2.5 text-sm text-white/65">Import JSON</button>
+              <button type="button" onClick={createDraft} className="w-full rounded-full bg-emerald-300 px-4 py-2.5 text-sm font-semibold text-[#07110f] transition hover:translate-y-[-1px]">+ New scenario</button>
+              <button type="button" onClick={() => fileInputRef.current?.click()} className="mt-2 w-full rounded-full border border-white/12 px-4 py-2.5 text-sm text-white/65 transition hover:border-white/20 hover:text-white/80">Import JSON</button>
               <input ref={fileInputRef} type="file" accept="application/json,.json" onChange={importFile} className="hidden" />
               {savedDraftAvailable && (
                 <button type="button" onClick={restoreDraft} className="mt-2 w-full rounded-full border border-amber-300/20 px-4 py-2.5 text-sm text-amber-100/70">Restore local draft</button>
@@ -159,12 +171,12 @@ export function ScenarioAuthoringWorkspace() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/35">Scenario document</p>
-                <p className="mt-1 text-xs text-white/25">JSON is the canonical authoring format in v0.11.</p>
+                <p className="mt-1 text-xs text-white/25">Canonical JSON · validated continuously</p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={saveDraft} className="rounded-full border border-white/12 px-3 py-1.5 text-xs text-white/65">Save draft</button>
-                <button type="button" onClick={copyJson} className="rounded-full border border-white/12 px-3 py-1.5 text-xs text-white/65">Copy</button>
-                <button type="button" onClick={exportJson} className="rounded-full border border-emerald-300/25 px-3 py-1.5 text-xs text-emerald-200">Export</button>
+                <button type="button" onClick={saveDraft} className="rounded-full border border-white/12 px-3 py-1.5 text-xs text-white/65 transition hover:border-white/20">Save draft</button>
+                <button type="button" onClick={copyJson} className="rounded-full border border-white/12 px-3 py-1.5 text-xs text-white/65 transition hover:border-white/20">Copy</button>
+                <button type="button" onClick={exportJson} className="rounded-full border border-emerald-300/25 px-3 py-1.5 text-xs text-emerald-200 transition hover:bg-emerald-300/[0.05]">Export</button>
               </div>
             </div>
 
@@ -176,12 +188,12 @@ export function ScenarioAuthoringWorkspace() {
                 setMessage("");
               }}
               spellCheck={false}
-              className="mt-4 min-h-[650px] w-full resize-y rounded-2xl border border-white/10 bg-[#050b09] p-4 font-mono text-[12px] leading-5 text-white/70 outline-none focus:border-emerald-300/25"
+              className="mt-4 min-h-[650px] w-full resize-y rounded-2xl border border-white/10 bg-[#050b09] p-4 font-mono text-[12px] leading-5 text-white/70 outline-none transition focus:border-emerald-300/25 focus:ring-4 focus:ring-emerald-300/[0.025]"
             />
 
             <div className={`mt-4 rounded-2xl border p-4 ${parsed.valid ? "border-emerald-300/20 bg-emerald-300/[0.05]" : "border-rose-300/20 bg-rose-300/[0.04]"}`}>
               <div className="flex items-center justify-between gap-3">
-                <p className={`text-sm font-semibold ${parsed.valid ? "text-emerald-200" : "text-rose-200"}`}>{parsed.valid ? "Valid content document" : `${parsed.errors.length} validation issue${parsed.errors.length === 1 ? "" : "s"}`}</p>
+                <p className={`text-sm font-semibold ${parsed.valid ? "text-emerald-200" : "text-rose-200"}`}>{parsed.valid ? "✓ Valid content document" : `${parsed.errors.length} validation issue${parsed.errors.length === 1 ? "" : "s"}`}</p>
                 {savedDraftAvailable && <button type="button" onClick={clearDraft} className="text-xs text-white/30 hover:text-white/60">Clear saved draft</button>}
               </div>
               {!parsed.valid && (
@@ -231,7 +243,7 @@ function AuthoringPreview({
     <aside className="rounded-[1.75rem] border border-white/10 bg-white/[0.025] p-4 md:p-5">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/35">Live content preview</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/35">Live learner preview</p>
           <p className="mt-1 text-xs text-white/25">{document.metadata.status} · v{document.metadata.version}</p>
         </div>
         <span className="rounded-full border border-white/10 px-2.5 py-1 text-[10px] text-white/35">{scenario.steps.length} steps · {scenario.challenges.length} boss cases</span>
@@ -248,13 +260,13 @@ function AuthoringPreview({
 
       <div className="mt-4 flex rounded-full border border-white/10 bg-black/20 p-1">
         {(["business", "architecture", "developer"] as LearningDepth[]).map((item) => (
-          <button key={item} type="button" onClick={() => setDepth(item)} className={`flex-1 rounded-full px-2 py-2 text-xs capitalize ${depth === item ? "bg-white/10 text-white" : "text-white/35"}`}>{item}</button>
+          <button key={item} type="button" onClick={() => setDepth(item)} className={`flex-1 rounded-full px-2 py-2 text-xs capitalize transition ${depth === item ? "bg-white/10 text-white" : "text-white/35 hover:text-white/60"}`}>{item}</button>
         ))}
       </div>
 
       <div className="mt-4 flex flex-wrap gap-1.5">
         {scenario.steps.map((item, index) => (
-          <button key={item.id} type="button" onClick={() => setPreviewStep(index)} className={`rounded-full border px-2.5 py-1 text-[10px] ${safeStep === index ? "border-emerald-300/30 bg-emerald-300/[0.08] text-emerald-100" : "border-white/8 text-white/28"}`}>{index + 1}</button>
+          <button key={item.id} type="button" onClick={() => setPreviewStep(index)} className={`rounded-full border px-2.5 py-1 text-[10px] transition ${safeStep === index ? "border-emerald-300/30 bg-emerald-300/[0.08] text-emerald-100" : "border-white/8 text-white/28 hover:text-white/50"}`}>{index + 1}</button>
         ))}
       </div>
 

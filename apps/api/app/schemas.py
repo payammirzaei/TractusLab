@@ -42,6 +42,7 @@ class UserResponse(BaseModel):
     display_name: str | None
     is_guest: bool
     email_verified: bool
+    role: str
 
 
 class SessionResponse(BaseModel):

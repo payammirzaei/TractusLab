@@ -6,6 +6,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from .admin_api import router as admin_router
 from .auth import (
     RESET_PASSWORD_PURPOSE,
     VERIFY_EMAIL_PURPOSE,
@@ -19,9 +20,11 @@ from .auth import (
     verify_password,
 )
 from .config import settings
+from .content_api import router as content_router
 from .db import get_db
 from .email_delivery import send_password_reset_email, send_verification_email
 from .models import AccountToken, AuthSession, BossScore, ScenarioProgress, User
+from .rbac import apply_bootstrap_role
 from .schemas import (
     BossScoreResponse,
     BossScoreUpdate,
@@ -43,7 +46,7 @@ from .schemas import (
     UserUpdate,
 )
 
-app = FastAPI(title=settings.app_name, version="0.3.0")
+app = FastAPI(title=settings.app_name, version="0.4.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.frontend_origin],
@@ -51,6 +54,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(content_router)
+app.include_router(admin_router)
 
 
 def normalize_email(value: str) -> str:
@@ -64,6 +69,7 @@ def user_response(user: User) -> UserResponse:
         display_name=user.display_name,
         is_guest=user.is_guest,
         email_verified=user.email_verified_at is not None,
+        role=user.role,
     )
 
 
@@ -114,6 +120,7 @@ def register_account(
 
     user.email = email
     user.password_hash = hash_password(payload.password)
+    apply_bootstrap_role(user)
     if payload.display_name is not None:
         display_name = payload.display_name.strip()
         user.display_name = display_name or None
@@ -138,6 +145,10 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> SessionRespon
     password_hash = user.password_hash if user is not None else None
     if not verify_password(payload.password, password_hash) or user is None or user.is_guest:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
+    if apply_bootstrap_role(user):
+        db.add(user)
+        db.commit()
+        db.refresh(user)
     token = create_auth_session(db, user)
     return SessionResponse(access_token=token, user=user_response(user))
 
