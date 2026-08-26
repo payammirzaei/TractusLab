@@ -28,7 +28,7 @@ test("recommended scenario prefers an active learning flow", () => {
 
 test("discovery filter combines status and text search", () => {
   const rows = scenarioDiscoveryRows(learningScenarios, {});
-  const quality = filterScenarioDiscovery(rows, "not-started", "quality");
+  const quality = filterScenarioDiscovery(rows, "not-started", "PART-QA-204");
   assert.equal(quality.length, 1);
   assert.equal(quality[0].scenario.id, "quality-management");
   assert.equal(filterScenarioDiscovery(rows, "complete", "").length, 0);
