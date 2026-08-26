@@ -80,9 +80,9 @@ test.describe("learner journey", () => {
 
     await page.goto("/account");
     await expect(page.getByRole("button", { name: "Create account" })).toBeVisible();
-    await page.locator("#display-name").fill(displayName);
-    await page.locator("#email").fill(email);
-    await page.locator("#password").fill(password);
+    await page.getByLabel("Display name", { exact: true }).fill(displayName);
+    await page.getByLabel("Email", { exact: true }).fill(email);
+    await page.getByLabel("Password", { exact: true }).fill(password);
     await page.getByRole("button", { name: "Create account" }).click();
 
     await expect(page.getByRole("heading", { level: 1, name: displayName })).toBeVisible();
@@ -91,8 +91,8 @@ test.describe("learner journey", () => {
 
     await page.goto("/account");
     await page.getByRole("tab", { name: "Sign in" }).click();
-    await page.locator("#email").fill(email);
-    await page.locator("#password").fill(password);
+    await page.getByLabel("Email", { exact: true }).fill(email);
+    await page.getByLabel("Password", { exact: true }).fill(password);
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
 
     await expect(page).toHaveURL(/\/profile$/);
@@ -135,6 +135,49 @@ test.describe("learner journey", () => {
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       expect(overflow, `${path} should not create body-level horizontal scrolling`).toBeLessThanOrEqual(1);
     }
+  });
+
+  test("core routes do not emit runtime errors or server failures", async ({ page }) => {
+    const browserErrors: string[] = [];
+    const serverFailures: string[] = [];
+
+    page.on("pageerror", (error) => browserErrors.push(`pageerror: ${error.message}`));
+    page.on("console", (message) => {
+      if (message.type() === "error") browserErrors.push(`console: ${message.text()}`);
+    });
+    page.on("response", (response) => {
+      if (response.status() >= 500) serverFailures.push(`${response.status()} ${response.url()}`);
+    });
+
+    for (const path of ["/", "/path", "/scenarios", "/learn/battery-pcf", "/profile", "/account", "/author"]) {
+      await page.goto(path);
+      await page.waitForLoadState("domcontentloaded");
+    }
+
+    expect(browserErrors, browserErrors.join("\n")).toEqual([]);
+    expect(serverFailures, serverFailures.join("\n")).toEqual([]);
+  });
+
+  test("account form controls have explicit accessible labels", async ({ page }) => {
+    await page.goto("/account");
+    await expect(page.getByRole("button", { name: "Create account" })).toBeVisible();
+
+    const missingLabels = await page.locator("input:not([type='hidden']), textarea, select").evaluateAll((elements) =>
+      elements.flatMap((element) => {
+        const control = element as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+        const labelled = Boolean(
+          control.getAttribute("aria-label") ||
+          control.getAttribute("aria-labelledby") ||
+          (control.id && document.querySelector(`label[for="${control.id}"]`)) ||
+          control.closest("label"),
+        );
+        return labelled ? [] : [control.id || control.name || control.tagName.toLowerCase()];
+      }),
+    );
+
+    expect(missingLabels).toEqual([]);
+    await expect(page.getByLabel("Password", { exact: true })).toHaveCount(1);
+    await expect(page.getByRole("button", { name: "Show password", exact: true })).toHaveCount(1);
   });
 
   test("unknown routes have a useful recovery path", async ({ page }) => {
