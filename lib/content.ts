@@ -16,7 +16,7 @@ export type ScenarioContentMetadata = {
   version: string;
   status: ContentStatus;
   tags: string[];
-  summary?: string;
+  summary: string;
 };
 
 export type ScenarioContentDocument = {
@@ -192,8 +192,8 @@ export function validateScenarioDocument(value: unknown): ContentValidationResul
     }
 
     if (!isStringArray(value.metadata.tags)) errors.push("metadata.tags must be a string array.");
-    if (value.metadata.summary !== undefined && typeof value.metadata.summary !== "string") {
-      errors.push("metadata.summary must be a string when provided.");
+    if (typeof value.metadata.summary !== "string") {
+      errors.push("metadata.summary must be a string.");
     }
   }
 
@@ -240,7 +240,7 @@ export function createScenarioDocument(
       version: options.version ?? "1.0.0",
       status: options.status ?? "draft",
       tags: options.tags ?? [],
-      ...(options.summary ? { summary: options.summary } : {}),
+      summary: options.summary ?? "",
     },
     scenario,
   };
