@@ -1,69 +1,65 @@
 import Link from "next/link";
 
+const journey = [
+  ["1", "Start with the business problem", "No protocol names. Just two companies that need to exchange useful data."],
+  ["2", "Watch the pieces appear", "Identity, catalog, policy, semantics and transfer only show up when the story needs them."],
+  ["3", "Choose your depth", "Manager, Architect and Developer views explain the same moment at different technical depths."],
+  ["4", "Break it and fix it", "Failure challenges make the learner diagnose policy, discovery and semantic problems."],
+] as const;
+
 export default function HomePage() {
   return (
-    <main className="min-h-screen px-6 py-8 md:px-12">
-      <nav className="mx-auto flex max-w-6xl items-center justify-between">
+    <main className="min-h-screen px-5 py-7 md:px-10">
+      <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4">
         <div className="text-lg font-semibold tracking-tight">TractusLab</div>
-        <span className="rounded-full border border-emerald-300/20 bg-emerald-300/5 px-3 py-1 text-xs text-emerald-100/70">
-          Interactive Tractus-X learning
-        </span>
+        <span className="rounded-full border border-emerald-300/20 bg-emerald-300/5 px-3 py-1 text-xs text-emerald-100/70">Tractus-X, without the black box</span>
       </nav>
 
-      <section className="mx-auto grid min-h-[82vh] max-w-6xl items-center gap-14 py-16 lg:grid-cols-[1.05fr_.95fr]">
+      <section className="mx-auto grid min-h-[78vh] max-w-7xl items-center gap-12 py-14 lg:grid-cols-[1.05fr_.95fr]">
         <div>
-          <p className="mb-5 text-sm font-semibold uppercase tracking-[0.24em] text-emerald-300">Learn by doing</p>
-          <h1 className="max-w-3xl text-5xl font-semibold leading-[1.02] tracking-[-0.05em] md:text-7xl">
-            Tractus-X should not feel like a black box.
-          </h1>
-          <p className="mt-7 max-w-2xl text-lg leading-8 text-white/62">
-            Start with a simple business story. See why each dataspace concept exists, watch the exchange happen, and only go technical when you want to.
-          </p>
-          <div className="mt-10 flex flex-wrap gap-3">
-            <Link href="/learn" className="rounded-full bg-emerald-300 px-6 py-3 font-semibold text-[#07110f] transition hover:scale-[1.02]">
-              Start with a battery →
-            </Link>
-            <a href="#idea" className="rounded-full border border-white/15 px-6 py-3 font-medium text-white/80">
-              How it works
-            </a>
+          <p className="mb-5 text-sm font-semibold uppercase tracking-[0.24em] text-emerald-300">Interactive simulator</p>
+          <h1 className="max-w-4xl text-5xl font-semibold leading-[1.01] tracking-[-0.055em] md:text-7xl">Understand the dataspace before you learn the stack.</h1>
+          <p className="mt-7 max-w-2xl text-lg leading-8 text-white/60">A manager should understand why Tractus-X exists. An architect should see how its pieces connect. A developer should be able to inspect the technical flow. Same story, different depth.</p>
+          <div className="mt-9 flex flex-wrap gap-3">
+            <Link href="/learn" className="rounded-full bg-emerald-300 px-6 py-3 font-semibold text-[#07110f] transition hover:translate-y-[-1px]">Launch the simulator →</Link>
+            <a href="#journey" className="rounded-full border border-white/15 px-6 py-3 font-medium text-white/75">See the learning model</a>
+          </div>
+          <div className="mt-9 flex flex-wrap gap-2 text-xs text-white/38">
+            {['Battery PCF / CO₂', 'Digital Twin', 'Manager → Developer depth', 'Break & Fix'].map((item) => (
+              <span key={item} className="rounded-full border border-white/10 bg-white/[0.025] px-3 py-1.5">{item}</span>
+            ))}
           </div>
         </div>
 
-        <div className="relative rounded-[2rem] border border-white/10 bg-white/[0.035] p-6 shadow-2xl shadow-black/20">
-          <div className="mb-8 flex items-center justify-between text-xs text-white/45">
-            <span>BAT-12345</span>
-            <span>Product Carbon Footprint</span>
+        <div className="rounded-[2rem] border border-white/10 bg-white/[0.035] p-5 shadow-2xl shadow-black/20 md:p-7">
+          <div className="flex items-center justify-between text-xs text-white/40"><span>Scenario</span><span>Battery PCF</span></div>
+          <div className="mt-6 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+            <Company title="Supplier" icon="🏭" subtitle="Owns PCF data" />
+            <div className="text-center text-emerald-300"><div className="text-xs text-white/35">governed exchange</div><div className="mt-2 text-4xl">↔</div></div>
+            <Company title="Manufacturer" icon="🚗" subtitle="Needs PCF data" />
           </div>
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
-            <Company title="Supplier A" icon="🏭" subtitle="Has battery CO₂ data" />
-            <div className="flex flex-col items-center gap-2 text-emerald-300">
-              <span className="text-xs text-white/45">controlled exchange</span>
-              <span className="text-4xl">→</span>
-            </div>
-            <Company title="Manufacturer" icon="🚗" subtitle="Needs the data" />
+          <div className="mt-6 grid grid-cols-5 gap-2 text-center text-[10px] text-white/48 md:text-xs">
+            {['Identity', 'Catalog', 'Semantics', 'Policy', 'Transfer'].map((item, index) => (
+              <div key={item} className={`rounded-xl border p-2 ${index < 2 ? 'border-emerald-300/30 bg-emerald-300/[0.08]' : 'border-white/8'}`}>{item}</div>
+            ))}
           </div>
-          <div className="mt-7 rounded-2xl bg-black/20 p-5">
-            <p className="text-sm text-white/50">The question</p>
-            <p className="mt-2 text-xl font-medium">“Can I get the carbon footprint of this battery?”</p>
-          </div>
+          <div className="mt-5 rounded-2xl bg-black/20 p-4"><p className="text-xs uppercase tracking-wider text-white/30">Current question</p><p className="mt-2 text-lg font-medium">“Who is asking for this battery data?”</p></div>
         </div>
       </section>
 
-      <section id="idea" className="mx-auto max-w-6xl border-t border-white/10 py-14">
-        <p className="max-w-3xl text-2xl leading-10 text-white/75">
-          No acronyms first. We begin with <strong className="text-white">who, what, why and permission</strong> — then reveal Identity, Catalog, Policy, Contract and Transfer as the learner needs them.
-        </p>
+      <section id="journey" className="mx-auto max-w-7xl border-t border-white/10 py-14">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">Learning model</p>
+        <h2 className="mt-3 max-w-3xl text-3xl font-semibold tracking-[-0.03em] md:text-4xl">Business first. Architecture second. Technology last.</h2>
+        <div className="mt-8 grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+          {journey.map(([number, title, text]) => (
+            <div key={number} className="rounded-3xl border border-white/10 bg-white/[0.025] p-5"><div className="text-sm font-semibold text-emerald-300">{number}</div><h3 className="mt-3 font-semibold">{title}</h3><p className="mt-2 text-sm leading-6 text-white/45">{text}</p></div>
+          ))}
+        </div>
       </section>
     </main>
   );
 }
 
 function Company({ title, icon, subtitle }: { title: string; icon: string; subtitle: string }) {
-  return (
-    <div className="rounded-3xl border border-white/10 bg-black/20 p-5 text-center">
-      <div className="text-4xl">{icon}</div>
-      <h2 className="mt-3 font-semibold">{title}</h2>
-      <p className="mt-1 text-sm leading-6 text-white/45">{subtitle}</p>
-    </div>
-  );
+  return <div className="rounded-3xl border border-white/10 bg-black/20 p-4 text-center md:p-5"><div className="text-4xl">{icon}</div><h2 className="mt-3 font-semibold">{title}</h2><p className="mt-1 text-xs leading-5 text-white/38">{subtitle}</p></div>;
 }
