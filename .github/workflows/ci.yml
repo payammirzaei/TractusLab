@@ -24,6 +24,13 @@ jobs:
       - name: Install API dependencies
         run: pip install -r apps/api/requirements.txt
 
+      - name: Verify Alembic migration
+        working-directory: apps/api
+        run: |
+          rm -f ci_migration.db
+          DATABASE_URL=sqlite+pysqlite:///./ci_migration.db alembic upgrade head
+          rm -f ci_migration.db
+
       - name: Run API tests
         run: pytest -q apps/api/tests
         env:
