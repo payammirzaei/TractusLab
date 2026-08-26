@@ -17,7 +17,7 @@ test.describe("learner journey", () => {
     await expect(page.locator("a.scenario-card")).toHaveCount(6);
   });
 
-  test("a learner can open the Battery PCF simulator and change learning depth", async ({ page }) => {
+  test("a learner can open the Battery PCF simulator and switch to beginner language", async ({ page }) => {
     await page.goto("/learn/battery-pcf");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await expect(page.getByText(/Step 1 of/i)).toBeVisible();
@@ -26,6 +26,43 @@ test.describe("learner journey", () => {
     await page.getByRole("button", { name: /New to dataspaces/i }).click();
     await expect(page.getByText(/Beginner-friendly language on/i)).toBeVisible();
     await expect(page.getByText(/What this means/i)).toBeVisible();
+  });
+
+  test("keyboard users can skip repeated navigation", async ({ page }) => {
+    await page.goto("/");
+    await page.keyboard.press("Tab");
+    const skipLink = page.getByRole("link", { name: /Skip to main content/i });
+    await expect(skipLink).toBeFocused();
+    await expect(skipLink).toBeVisible();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/#main-content$/);
+  });
+
+  test("account registration, logout and login work through the real API", async ({ page }) => {
+    const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const email = `browser-${suffix}@example.com`;
+    const password = "Browser-e2e-Password-42!";
+    const displayName = `Browser Learner ${suffix.slice(-6)}`;
+
+    await page.goto("/account");
+    await expect(page.getByRole("button", { name: "Create account" })).toBeVisible();
+    await page.getByLabel("Display name").fill(displayName);
+    await page.getByLabel("Email").fill(email);
+    await page.getByLabel("Password").fill(password);
+    await page.getByRole("button", { name: "Create account" }).click();
+
+    await expect(page.getByRole("heading", { level: 1, name: displayName })).toBeVisible();
+    await page.getByRole("button", { name: "Sign out" }).click();
+    await expect(page).toHaveURL(/\/$/);
+
+    await page.goto("/account");
+    await page.getByRole("tab", { name: "Sign in" }).click();
+    await page.getByLabel("Email").fill(email);
+    await page.getByLabel("Password").fill(password);
+    await page.getByRole("button", { name: "Sign in" }).click();
+
+    await expect(page).toHaveURL(/\/profile$/);
+    await expect(page.getByRole("heading", { level: 1, name: displayName })).toBeVisible();
   });
 
   test("unknown routes have a useful recovery path", async ({ page }) => {
