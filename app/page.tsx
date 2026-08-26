@@ -12,7 +12,8 @@ export default function HomePage() {
     <main className="min-h-screen px-5 py-7 md:px-10">
       <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4">
         <div className="text-lg font-semibold tracking-tight">TractusLab</div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Link href="/author" className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/40 hover:text-white/75">Authoring</Link>
           <Link href="/account" className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/50 hover:text-white/80">Account</Link>
           <Link href="/profile" className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/50 hover:text-white/80">Profile</Link>
           <span className="rounded-full border border-emerald-300/20 bg-emerald-300/5 px-3 py-1 text-xs text-emerald-100/70">Tractus-X, without the black box</span>
