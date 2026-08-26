@@ -4,12 +4,10 @@
 
 TractusLab is an interactive, simulation-first learning environment for Tractus-X and dataspace concepts. The current version intentionally avoids a real EDC/DTR backend so the learning experience stays fast, visual and approachable.
 
-## Simulator v0.6
+## Simulator v0.7
 
-- Guided mission / curriculum path with prerequisites and unlocks
-- Competency tracking based on completed scenarios and diagnostic mastery
-- Final mastery gate requiring all learning missions plus three Boss Fight scores of 70+
 - Business-first learning journeys
+- Guided mission path with prerequisites and unlocks
 - Manager / Architect / Developer depth switcher
 - Explain-like-I’m-new mode
 - Persistent Dataspace Map
@@ -26,6 +24,10 @@ TractusLab is an interactive, simulation-first learning environment for Tractus-
 - Break & Fix / Boss Fight mode
 - Scoring based on wrong attempts and hint usage
 - Best Boss Fight score stored locally
+- Competency tracking and mastery gate
+- Achievement engine backed by real progress and diagnostic scores
+- Local learner profile with summary statistics
+- Printable mastery certificate unlocked only after full path completion and three Boss Fights at 70+
 - Local learning progress and resume
 - Scenario-driven content model
 - Node tests + TypeScript + production build CI
@@ -49,7 +51,6 @@ npm run build
 
 1. **Simulation first** — teach the mental model with instant feedback.
 2. **Business first** — explain the problem before the acronym.
-3. **Guided progression** — unlock concepts in a deliberate order instead of dropping the whole stack on a new learner.
-4. **Progressive depth** — reveal architecture and developer detail only when useful.
-5. **Break & Fix** — teach diagnosis instead of passive reading.
-6. **Real lab later** — connect the same visual model to real Tractus-X components only after the simulator is proven.
+3. **Progressive depth** — reveal architecture and developer detail only when useful.
+4. **Practice and proof** — use missions, Boss Fights, competencies and achievements to verify learning.
+5. **Real lab later** — connect the same visual model to real Tractus-X components only after the simulator is proven.

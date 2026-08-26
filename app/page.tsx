@@ -4,7 +4,7 @@ const journey = [
   ["1", "Start with the business problem", "No protocol names. Just two companies that need to exchange useful data."],
   ["2", "Follow the guided missions", "Concepts unlock in a deliberate order, while useful branches open when the foundation is strong enough."],
   ["3", "Choose your depth", "Manager, Architect and Developer views explain the same moment at different technical depths."],
-  ["4", "Prove it in Boss Fights", "Failure diagnosis earns competencies and clears the final mastery gate."],
+  ["4", "Prove it in Boss Fights", "Failure diagnosis earns competencies, achievements and clears the final mastery gate."],
 ] as const;
 
 export default function HomePage() {
@@ -12,7 +12,10 @@ export default function HomePage() {
     <main className="min-h-screen px-5 py-7 md:px-10">
       <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4">
         <div className="text-lg font-semibold tracking-tight">TractusLab</div>
-        <span className="rounded-full border border-emerald-300/20 bg-emerald-300/5 px-3 py-1 text-xs text-emerald-100/70">Tractus-X, without the black box</span>
+        <div className="flex items-center gap-2">
+          <Link href="/profile" className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/50 hover:text-white/80">Profile</Link>
+          <span className="rounded-full border border-emerald-300/20 bg-emerald-300/5 px-3 py-1 text-xs text-emerald-100/70">Tractus-X, without the black box</span>
+        </div>
       </nav>
 
       <section className="mx-auto grid min-h-[78vh] max-w-7xl items-center gap-12 py-14 lg:grid-cols-[1.05fr_.95fr]">
@@ -25,7 +28,7 @@ export default function HomePage() {
             <Link href="/scenarios" className="rounded-full border border-white/15 px-6 py-3 font-medium text-white/75">Explore all simulations</Link>
           </div>
           <div className="mt-9 flex flex-wrap gap-2 text-xs text-white/38">
-            {['Guided missions', 'Battery PCF / CO₂', 'Digital Twin', 'Traceability', 'Demand & Capacity', 'Quality', 'Circular Economy', 'Boss Fight mastery'].map((item) => (
+            {['Guided missions', 'Battery PCF / CO₂', 'Digital Twin', 'Traceability', 'Demand & Capacity', 'Quality', 'Circular Economy', 'Achievements', 'Boss Fight mastery'].map((item) => (
               <span key={item} className="rounded-full border border-white/10 bg-white/[0.025] px-3 py-1.5">{item}</span>
             ))}
           </div>
