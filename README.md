@@ -4,11 +4,13 @@
 
 TractusLab is an interactive, simulation-first learning environment for Tractus-X and dataspace concepts. The current version intentionally avoids a real EDC/DTR backend so the learning experience stays fast, visual and approachable.
 
-## Simulator v1
+## Simulator v0.5
 
-- Business-first learning flow
+- Business-first learning journeys
 - Manager / Architect / Developer depth switcher
-- Persistent Dataspace Map with highlighted components
+- Explain-like-I’m-new mode
+- Persistent Dataspace Map
+- Event / protocol-facing timeline
 - Six scenario-driven simulations:
   - Battery Product Carbon Footprint (PCF / CO₂)
   - Digital Twin discovery
@@ -18,11 +20,12 @@ TractusLab is an interactive, simulation-first learning environment for Tractus-
   - Circular Economy / Product Passport
 - Why-is-this-needed / what-if-we-skip-it explanations
 - Contextual glossary
-- Break & Fix challenges with hints and root-cause feedback
-- Local learning progress persisted in the browser
-- Scenario hub with completion and solved-challenge status
-- Pure simulation/progress logic with Node tests
-- GitHub Actions CI for tests, type-checking and Next.js builds
+- Break & Fix / Boss Fight mode
+- Scoring based on wrong attempts and hint usage
+- Best Boss Fight score stored locally
+- Local learning progress and resume
+- Scenario-driven content model
+- Node tests + TypeScript + production build CI
 
 ## Run locally
 
@@ -41,9 +44,8 @@ npm run build
 
 ## Product direction
 
-The roadmap is intentionally layered:
-
 1. **Simulation first** — teach the mental model with instant feedback.
-2. **Learning depth** — explain the same event for managers, architects and developers.
-3. **Break & Fix** — teach failure diagnosis instead of passive reading.
-4. **Real lab later** — connect the same visual model to real Tractus-X components only after the simulator is proven.
+2. **Business first** — explain the problem before the acronym.
+3. **Progressive depth** — reveal architecture and developer detail only when useful.
+4. **Break & Fix** — teach diagnosis instead of passive reading.
+5. **Real lab later** — connect the same visual model to real Tractus-X components only after the simulator is proven.
