@@ -10,6 +10,7 @@ import {
   type Challenge,
   type LearningScenario,
 } from "../lib/simulator.ts";
+import { learningScenarios } from "../data/scenarios.ts";
 
 test("progressPercent clamps values and reaches 100", () => {
   assert.equal(progressPercent(0, 5), 0);
@@ -107,4 +108,10 @@ test("scenario validation catches structural content problems", () => {
   assert.ok(errors.includes("Duplicate step id: same"));
   assert.ok(errors.includes("Step same must define all three learning depths."));
   assert.ok(errors.includes("Challenge broken has no matching correct option."));
+});
+
+test("shipped learning scenarios satisfy structural validation", () => {
+  for (const scenario of learningScenarios) {
+    assert.deepEqual(validateScenario(scenario), [], scenario.id);
+  }
 });
