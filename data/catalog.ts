@@ -1,16 +1,6 @@
-import { learningScenarios as coreScenarios } from "./scenarios";
-import { traceabilityScenario } from "./traceability";
-import { demandCapacityScenario } from "./demand-capacity";
-import { qualityScenario } from "./quality";
-import { circularEconomyScenario } from "./circular-economy";
+import { publishedScenarioDocuments } from "./content-registry";
 
-export const learningScenarios = [
-  ...coreScenarios,
-  traceabilityScenario,
-  demandCapacityScenario,
-  qualityScenario,
-  circularEconomyScenario,
-];
+export const learningScenarios = publishedScenarioDocuments.map((document) => document.scenario);
 
 export function getScenarioById(id: string | null | undefined) {
   if (!id) return learningScenarios[0];
