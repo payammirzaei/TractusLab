@@ -1,0 +1,5 @@
+TractusLab database migrations are managed with Alembic.
+
+Run from apps/api:
+
+    alembic upgrade head
