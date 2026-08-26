@@ -1,76 +1,60 @@
 # TractusLab
 
-**Learn Tractus-X by understanding the business story first, then revealing the architecture and technical details.**
+**Don’t read the dataspace. Run it.**
 
-TractusLab is an interactive, simulation-first learning environment for Tractus-X and dataspace concepts. It combines guided scenarios, progressive technical depth, diagnostics, learner progress, secure accounts, and a structured scenario-authoring workflow.
+TractusLab is an interactive, simulation-first learning environment for Tractus-X and dataspace concepts. Learners start with a business problem, follow the exchange visually, switch between Manager / Architect / Developer depth, then diagnose failures in Boss Fights.
 
-## v0.13 — runtime content + first visual overhaul
+## v0.14 — learner UX overhaul
+
+### Learner experience
+- Shared learner navigation across Home, Mission Path, Scenario Hub, Simulator and Profile
+- Responsive dark industrial visual system with consistent surfaces, focus states and reduced-motion support
+- Scenario Hub redesigned as a discovery dashboard with search, progress filters, recommended next scenario, loading skeletons and empty states
+- Two-step local progress reset to prevent accidental deletion
+- Mission Path redesigned as a visual milestone timeline with clear locked / ready / in-progress / complete states
+- Competency and mastery summaries kept visible alongside the path
+- Simulator shell redesigned for lower cognitive load
+- Mobile Simulator shows the current question and action first; map/timeline move into an expandable Visual Workspace
+- Desktop Simulator keeps the visual workspace beside a sticky learning panel
+- Mobile scenario selector replaces cramped scenario pills
+- Horizontal step jump rail for fast navigation
+- Clearer beginner-mode and learning-depth controls
+- Boss Fight interface now prioritizes symptom, diagnosis options and live score
 
 ### Learning product
-- Six scenario-driven simulations
-- Business / Architecture / Developer depth
+- Six business scenarios: Battery PCF, Digital Twin, Traceability, Demand & Capacity, Quality and Circular Economy
+- Manager / Architect / Developer depth
 - Explain-like-I’m-new mode
+- Dataspace exchange cockpit + event/protocol timeline
 - Guided mission path and prerequisites
 - Boss Fights, scoring, competencies and achievements
 - Learner profile and mastery certificate
 - Offline local cache with optional server synchronization
-- Redesigned dataspace exchange cockpit with active route highlighting
-- Redesigned event timeline with clear past / now / next state
 
 ### Runtime content
-- Scenario source modules now live under the top-level `content/` boundary instead of being mixed with application data
-- Each packaged scenario has its own versioned published content document
-- The packaged registry remains the instant, offline-safe runtime baseline
-- When `NEXT_PUBLIC_API_URL` is configured, `/v1/content/published` is loaded without authentication for learner runtime content
-- Valid server-published documents safely overlay the matching packaged scenario
-- Invalid, draft, mismatched or malformed server content is rejected and the packaged version remains active
-- Newly published server scenarios can be appended without rebuilding the core catalog
-- Learner pages never block on content synchronization
+- Scenario source content lives under `content/`
+- Six independent versioned content documents live under `content/documents/`
+- Packaged content renders immediately
+- When `NEXT_PUBLIC_API_URL` is configured, valid published server revisions can overlay packaged scenarios without blocking the learner
+- Invalid, mismatched or non-published server documents are rejected and packaged content remains the fallback
 
 ### Accounts and security
-- Guest-to-account upgrade without losing learning progress
+- Guest-to-account upgrade without losing progress
 - Argon2 password hashing
 - Opaque revocable bearer sessions
-- Forgot/reset password
+- Forgot/reset password and change password
 - Email verification
-- Change password
 - Active session management
 - Hashed, expiring, single-use account-action tokens
 - Alembic migrations
 
-### Content authoring and RBAC
-- Versioned scenario content contract (`schemaVersion: 1.0`)
-- Local Authoring Studio with live validation and learner preview
-- JSON import/export and local draft persistence
-- Server-side scenario content and revision history
-- Draft → In review → Approved → Published workflow
-- Changes-requested loop back to authors
-- Roles: `learner`, `author`, `reviewer`, `admin`
-- Admin Team Access UI for assigning content roles
-- Public read endpoint for published server content
-
-No user receives an authoring role automatically. `CONTENT_ADMIN_EMAILS` can bootstrap explicitly listed admin emails for local/future deployment setup.
-
-## Content layout
-
-```text
-content/
-├── scenarios.ts
-├── traceability.ts
-├── demand-capacity.ts
-├── quality.ts
-├── circular-economy.ts
-└── documents/
-    ├── battery-pcf.document.ts
-    ├── digital-twin.document.ts
-    ├── traceability.document.ts
-    ├── demand-capacity.document.ts
-    ├── quality.document.ts
-    ├── circular-economy.document.ts
-    └── index.ts
-```
-
-`data/content-registry.ts` consumes published packaged documents. Learner routes use a non-blocking runtime gate that can overlay reviewed and published server versions when the API is enabled.
+### Content workflow + RBAC
+- Local Authoring Studio with schema validation, preview, JSON import/export and local drafts
+- Server-side content revisions and history
+- Draft → Review → Approved → Published workflow
+- `learner`, `author`, `reviewer`, `admin` roles
+- Admin Team Access UI for role assignment
+- Public endpoint for published content
 
 ## Run frontend locally
 
@@ -100,27 +84,6 @@ To bootstrap an initial content admin locally:
 CONTENT_ADMIN_EMAILS=you@example.com
 ```
 
-## Email development
-
-Before SMTP is configured:
-
-```env
-EXPOSE_DEV_TOKENS=true
-EMAIL_DELIVERY_MODE=disabled
-```
-
-For real delivery later:
-
-```env
-EMAIL_DELIVERY_MODE=smtp
-SMTP_HOST=smtp.example.com
-SMTP_PORT=587
-SMTP_USERNAME=...
-SMTP_PASSWORD=...
-SMTP_FROM_EMAIL=noreply@example.com
-SMTP_USE_TLS=true
-```
-
 ## Validation and tests
 
 ```bash
@@ -128,33 +91,21 @@ npm run content:validate
 npm test
 npm run typecheck
 npm run build
-```
-
-Backend:
-
-```bash
 PYTHONPATH=apps/api pytest -q apps/api/tests
 ```
 
-Migrations:
-
-```bash
-cd apps/api
-DATABASE_URL=sqlite+pysqlite:///./migration_test.db alembic upgrade head
-```
-
-GitHub Actions verifies migrations, API/security/RBAC/content workflow tests, scenario content validation, runtime overlay tests, simulator tests, TypeScript and the Next.js production build.
+GitHub Actions verifies migrations, API/security/RBAC/content workflow tests, scenario content validation, simulator/runtime tests, TypeScript and the Next.js production build.
 
 ## Deployment policy
 
 Railway deployment is intentionally deferred until the product is roughly 90% complete. Until then, development remains GitHub + CI focused.
 
-## Product direction
+## Product principles
 
 1. **Business first** — explain the problem before the acronym.
 2. **Simulation first** — make the mental model interactive before connecting real infrastructure.
 3. **Progressive depth** — Manager → Architect → Developer without changing the business story.
 4. **Practice and proof** — diagnostics and mastery matter more than passive reading.
-5. **Content as a product** — scenarios are versioned, reviewable and publishable instead of hard-coded forever.
-6. **UI/UX is a product requirement** — state, navigation and active system behavior should be visually obvious without documentation.
+5. **Content as a product** — scenarios are versioned, reviewable and publishable.
+6. **UI/UX is a core requirement** — the next action and current state should be visually obvious without documentation.
 7. **Real lab later** — EDC, DTR and deeper Tractus-X infrastructure come after the learning product is mature.
