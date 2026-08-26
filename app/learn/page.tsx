@@ -1,5 +1,5 @@
-import { LearnSimulator } from "@/components/LearnSimulator";
+import { LearnSimulatorV2 } from "@/components/LearnSimulatorV2";
 
 export default function LearnPage() {
-  return <LearnSimulator />;
+  return <LearnSimulatorV2 />;
 }
