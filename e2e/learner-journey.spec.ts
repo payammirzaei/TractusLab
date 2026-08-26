@@ -57,9 +57,9 @@ test.describe("learner journey", () => {
 
     await page.goto("/account");
     await expect(page.getByRole("button", { name: "Create account" })).toBeVisible();
-    await page.getByLabel("Display name").fill(displayName);
-    await page.getByLabel("Email").fill(email);
-    await page.getByLabel("Password").fill(password);
+    await page.locator("#display-name").fill(displayName);
+    await page.locator("#email").fill(email);
+    await page.locator("#password").fill(password);
     await page.getByRole("button", { name: "Create account" }).click();
 
     await expect(page.getByRole("heading", { level: 1, name: displayName })).toBeVisible();
@@ -68,8 +68,8 @@ test.describe("learner journey", () => {
 
     await page.goto("/account");
     await page.getByRole("tab", { name: "Sign in" }).click();
-    await page.getByLabel("Email").fill(email);
-    await page.getByLabel("Password").fill(password);
+    await page.locator("#email").fill(email);
+    await page.locator("#password").fill(password);
     await page.getByRole("button", { name: "Sign in" }).click();
 
     await expect(page).toHaveURL(/\/profile$/);
@@ -82,7 +82,8 @@ test.describe("learner journey", () => {
     await page.goto("/author");
     await expect(page.getByRole("heading", { level: 1, name: /Write like a teacher/i })).toBeVisible();
     await page.getByRole("button", { name: /New scenario/i }).click();
-    await page.getByLabel("Title").fill(title);
+    const titleField = page.getByRole("textbox", { name: "Title", exact: true });
+    await titleField.fill(title);
     await expect(page.getByRole("heading", { level: 2, name: title })).toBeVisible();
 
     await page.getByRole("button", { name: /Save local draft/i }).click();
@@ -90,7 +91,7 @@ test.describe("learner journey", () => {
 
     await page.reload();
     await page.getByRole("button", { name: /Restore saved draft/i }).click();
-    await expect(page.getByLabel("Title")).toHaveValue(title);
+    await expect(page.getByRole("textbox", { name: "Title", exact: true })).toHaveValue(title);
     await expect(page.getByRole("heading", { level: 2, name: title })).toBeVisible();
   });
 
