@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { LearnerNav } from "@/components/LearnerNav";
 import { confirmEmailVerification } from "@/lib/server-sync";
 
 export function VerifyEmailPanel({ token }: { token: string }) {
@@ -11,7 +12,7 @@ export function VerifyEmailPanel({ token }: { token: string }) {
 
   async function verify() {
     if (!token) {
-      setError("Verification token is missing.");
+      setError("Verification token is missing or the link is incomplete.");
       return;
     }
     setBusy(true);
@@ -27,27 +28,30 @@ export function VerifyEmailPanel({ token }: { token: string }) {
   }
 
   return (
-    <main className="min-h-screen px-5 py-7 md:px-10">
-      <div className="mx-auto max-w-xl">
-        <Link href="/account" className="font-semibold">← Account</Link>
-        <div className="mt-12 rounded-[2rem] border border-white/10 bg-white/[0.03] p-6 md:p-8">
+    <main className="min-h-screen pb-16">
+      <LearnerNav eyebrow="Email security" />
+      <div className="mx-auto max-w-2xl px-4 py-10 md:px-8 md:py-16">
+        <section className="surface-hero p-6 text-center md:p-9">
           {done ? (
             <>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">Verified</p>
-              <h1 className="mt-3 text-3xl font-semibold">Your email is verified.</h1>
-              <p className="mt-3 text-sm leading-6 text-white/45">This verification token cannot be used again.</p>
-              <Link href="/account" className="mt-7 inline-flex rounded-full bg-emerald-300 px-5 py-2.5 text-sm font-semibold text-[#07110f]">Back to account →</Link>
+              <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-300/10 text-2xl text-emerald-200">✓</div>
+              <p className="eyebrow mt-6">Verified</p>
+              <h1 className="mt-3 text-3xl font-semibold tracking-[-0.035em] md:text-4xl">Your email is verified.</h1>
+              <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-white/42">The verification token is now consumed and cannot be used again.</p>
+              <Link href="/account" className="button-primary mt-7">Back to account →</Link>
             </>
           ) : (
             <>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">Email verification</p>
-              <h1 className="mt-3 text-3xl font-semibold">Confirm this email address.</h1>
-              <p className="mt-3 text-sm leading-6 text-white/45">Verification uses a single-use expiring token. Opening this page does not consume it; confirmation happens only when you click below.</p>
-              {error && <p className="mt-5 text-sm text-rose-300">{error}</p>}
-              <button disabled={busy || !token} onClick={verify} className="mt-7 rounded-full bg-emerald-300 px-5 py-2.5 text-sm font-semibold text-[#07110f] disabled:opacity-50">{busy ? "Verifying…" : "Verify email"}</button>
+              <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.05] text-xl text-cyan-100">@</div>
+              <p className="eyebrow mt-6">Email verification</p>
+              <h1 className="mt-3 text-3xl font-semibold tracking-[-0.035em] md:text-4xl">Confirm this email address.</h1>
+              <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-white/42">Opening this page does not consume the single-use token. Verification happens only after the explicit confirmation below.</p>
+              <div aria-live="polite">{error && <p className="mx-auto mt-5 max-w-lg rounded-2xl border border-rose-300/15 bg-rose-300/[0.04] p-3 text-sm text-rose-100/80">{error}</p>}</div>
+              <button disabled={busy || !token} onClick={verify} className="button-primary mt-7 px-6 py-3 text-sm disabled:opacity-45">{busy ? "Verifying…" : "Verify email"}</button>
+              {!token && <p className="mt-4 text-xs text-white/30">Request a fresh verification link from Account Security.</p>}
             </>
           )}
-        </div>
+        </section>
       </div>
     </main>
   );
