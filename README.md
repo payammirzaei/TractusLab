@@ -2,20 +2,27 @@
 
 **Learn Tractus-X by understanding the business story first, then revealing the architecture and technical details.**
 
-TractusLab is an interactive, simulation-first learning environment for Tractus-X and dataspace concepts. The first version intentionally avoids a real EDC/DTR backend so the learning experience stays fast, visual and approachable.
+TractusLab is an interactive, simulation-first learning environment for Tractus-X and dataspace concepts. The current version intentionally avoids a real EDC/DTR backend so the learning experience stays fast, visual and approachable.
 
 ## Simulator v1
 
-- Business-first manager journey
+- Business-first learning flow
 - Manager / Architect / Developer depth switcher
 - Persistent Dataspace Map with highlighted components
-- Battery Product Carbon Footprint (PCF / CO₂) scenario
-- Digital Twin discovery scenario
+- Six scenario-driven simulations:
+  - Battery Product Carbon Footprint (PCF / CO₂)
+  - Digital Twin discovery
+  - Parts Traceability
+  - Demand & Capacity
+  - Quality Management
+  - Circular Economy / Product Passport
 - Why-is-this-needed / what-if-we-skip-it explanations
 - Contextual glossary
 - Break & Fix challenges with hints and root-cause feedback
-- Scenario-driven content model
-- Pure simulation logic with Node tests
+- Local learning progress persisted in the browser
+- Scenario hub with completion and solved-challenge status
+- Pure simulation/progress logic with Node tests
+- GitHub Actions CI for tests, type-checking and Next.js builds
 
 ## Run locally
 
@@ -28,11 +35,7 @@ npm run dev
 
 ```bash
 npm test
-```
-
-## Build
-
-```bash
+npm run typecheck
 npm run build
 ```
 
