@@ -6,8 +6,9 @@ import { useBossScores } from "@/components/useBossScores";
 import { useLearningProgress } from "@/components/useLearningProgress";
 import { achievements, coreScenarioIds } from "@/data/achievements";
 import { competencies } from "@/data/curriculum";
-import { achievementEarned, learnerStats, LEARNER_NAME_STORAGE_KEY, masteryCertificateUnlocked, sanitizeLearnerName } from "@/lib/profile";
 import { competencyEarned } from "@/lib/curriculum";
+import { achievementEarned, learnerStats, LEARNER_NAME_STORAGE_KEY, masteryCertificateUnlocked, sanitizeLearnerName } from "@/lib/profile";
+import { getCurrentAccount, serverSyncEnabled, syncDisplayName } from "@/lib/server-sync";
 
 export function LearnerProfile() {
   const { progress, ready: progressReady } = useLearningProgress();
@@ -16,9 +17,19 @@ export function LearnerProfile() {
   const [nameReady, setNameReady] = useState(false);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(LEARNER_NAME_STORAGE_KEY) ?? "";
-    setName(sanitizeLearnerName(stored));
+    const stored = sanitizeLearnerName(window.localStorage.getItem(LEARNER_NAME_STORAGE_KEY) ?? "");
+    setName(stored);
     setNameReady(true);
+
+    if (!serverSyncEnabled()) return;
+    void getCurrentAccount()
+      .then((account) => {
+        const remoteName = sanitizeLearnerName(account?.display_name ?? "");
+        if (!remoteName) return;
+        setName(remoteName);
+        window.localStorage.setItem(LEARNER_NAME_STORAGE_KEY, remoteName);
+      })
+      .catch(() => undefined);
   }, []);
 
   const ready = progressReady && scoresReady && nameReady;
@@ -35,6 +46,7 @@ export function LearnerProfile() {
     const clean = sanitizeLearnerName(value);
     setName(clean);
     window.localStorage.setItem(LEARNER_NAME_STORAGE_KEY, clean);
+    void syncDisplayName(clean).catch(() => undefined);
   }
 
   const displayName = name || "Local Learner";
@@ -45,6 +57,7 @@ export function LearnerProfile() {
         <header className="flex flex-wrap items-center justify-between gap-3 print:hidden">
           <Link href="/" className="font-semibold tracking-tight">← TractusLab</Link>
           <div className="flex flex-wrap gap-2">
+            <Link href="/account" className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-white/50 hover:text-white/80">Account</Link>
             <Link href="/path" className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-white/50 hover:text-white/80">Mission path</Link>
             <Link href="/scenarios" className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-white/50 hover:text-white/80">Scenarios</Link>
             <span className="rounded-full border border-emerald-300/20 bg-emerald-300/5 px-3 py-1.5 text-xs text-emerald-100/70">Learner profile</span>
@@ -67,7 +80,7 @@ export function LearnerProfile() {
               placeholder="Your name"
               className="mt-3 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none transition placeholder:text-white/20 focus:border-emerald-300/35"
             />
-            <p className="mt-3 text-xs leading-5 text-white/30">Stored only in this browser for now.</p>
+            <p className="mt-3 text-xs leading-5 text-white/30">Synced to your account when the API is enabled; cached locally otherwise.</p>
           </div>
         </section>
 
@@ -180,8 +193,8 @@ function Certificate({ name, onPrint }: { name: string; onPrint: () => void }) {
       </div>
 
       <div className="flex flex-wrap items-end justify-between gap-4 border-t border-white/10 pt-5 text-xs text-white/32 print:border-black/20 print:text-black/55">
-        <span>Generated from local TractusLab learning evidence.</span>
-        <span>TractusLab v0.7</span>
+        <span>Generated from TractusLab learning evidence.</span>
+        <span>TractusLab v0.9</span>
       </div>
     </div>
   );
