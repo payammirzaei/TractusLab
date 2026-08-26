@@ -5,10 +5,11 @@ import {
   parseProgress,
   scenarioCompletionPercent,
   updateStepProgress,
+  type LearningProgress,
 } from "../lib/progress.ts";
 
 test("local progress never moves backwards", () => {
-  let progress = {};
+  let progress: LearningProgress = {};
   progress = updateStepProgress(progress, "battery-pcf", 3, 5);
   progress = updateStepProgress(progress, "battery-pcf", 1, 5);
 
@@ -17,7 +18,7 @@ test("local progress never moves backwards", () => {
 });
 
 test("scenario completion remains complete after restart", () => {
-  let progress = {};
+  let progress: LearningProgress = {};
   progress = updateStepProgress(progress, "battery-pcf", 5, 5);
   progress = updateStepProgress(progress, "battery-pcf", 0, 5);
 
@@ -26,7 +27,7 @@ test("scenario completion remains complete after restart", () => {
 });
 
 test("solved challenge tracking is idempotent", () => {
-  let progress = {};
+  let progress: LearningProgress = {};
   progress = markChallengeSolved(progress, "battery-pcf", "policy-mismatch");
   progress = markChallengeSolved(progress, "battery-pcf", "policy-mismatch");
 
