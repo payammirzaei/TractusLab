@@ -10,7 +10,7 @@ on:
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
 
     steps:
       - name: Checkout
@@ -62,3 +62,40 @@ jobs:
 
       - name: Run browser journey tests
         run: npm run test:e2e
+
+      - name: Build production web container
+        run: docker build --build-arg NEXT_PUBLIC_API_URL=http://127.0.0.1:8000 -t tractuslab-web:ci .
+
+      - name: Smoke-test production web container
+        run: |
+          set -eu
+          trap 'docker rm -f tractuslab-web-smoke >/dev/null 2>&1 || true' EXIT
+          docker run -d --name tractuslab-web-smoke -p 3001:3000 tractuslab-web:ci
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:3001/api/health >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs tractuslab-web-smoke
+          exit 1
+
+      - name: Build production API container
+        run: docker build -f apps/api/Dockerfile -t tractuslab-api:ci .
+
+      - name: Smoke-test production API container with migrations
+        run: |
+          set -eu
+          trap 'docker rm -f tractuslab-api-smoke >/dev/null 2>&1 || true' EXIT
+          docker run -d --name tractuslab-api-smoke -p 8001:8000 \
+            -e DATABASE_URL=sqlite+pysqlite:///./container_smoke.db \
+            -e FRONTEND_ORIGIN=http://127.0.0.1:3001 \
+            tractuslab-api:ci
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:8001/health >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs tractuslab-api-smoke
+          exit 1
