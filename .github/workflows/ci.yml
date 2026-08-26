@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   test-and-build:
@@ -26,6 +27,9 @@ jobs:
 
       - name: Run simulator tests
         run: npm test
+
+      - name: Type-check application
+        run: npm run typecheck
 
       - name: Build Next.js application
         run: npm run build
