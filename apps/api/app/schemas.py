@@ -1,13 +1,26 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 
 
 class GuestSessionRequest(BaseModel):
     display_name: str | None = Field(default=None, max_length=120)
 
 
+class RegisterRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=10, max_length=128)
+    display_name: str | None = Field(default=None, max_length=120)
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=1, max_length=128)
+
+
 class UserResponse(BaseModel):
     id: str
+    email: str | None
     display_name: str | None
+    is_guest: bool
 
 
 class SessionResponse(BaseModel):
