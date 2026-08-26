@@ -21,11 +21,11 @@ export default function HomePage() {
           <h1 className="max-w-4xl text-5xl font-semibold leading-[1.01] tracking-[-0.055em] md:text-7xl">Understand the dataspace before you learn the stack.</h1>
           <p className="mt-7 max-w-2xl text-lg leading-8 text-white/60">A manager should understand why Tractus-X exists. An architect should see how its pieces connect. A developer should be able to inspect the technical flow. Same story, different depth.</p>
           <div className="mt-9 flex flex-wrap gap-3">
-            <Link href="/learn" className="rounded-full bg-emerald-300 px-6 py-3 font-semibold text-[#07110f] transition hover:translate-y-[-1px]">Launch the simulator →</Link>
-            <a href="#journey" className="rounded-full border border-white/15 px-6 py-3 font-medium text-white/75">See the learning model</a>
+            <Link href="/scenarios" className="rounded-full bg-emerald-300 px-6 py-3 font-semibold text-[#07110f] transition hover:translate-y-[-1px]">Explore simulations →</Link>
+            <Link href="/learn/battery-pcf" className="rounded-full border border-white/15 px-6 py-3 font-medium text-white/75">Start with Battery CO₂</Link>
           </div>
           <div className="mt-9 flex flex-wrap gap-2 text-xs text-white/38">
-            {['Battery PCF / CO₂', 'Digital Twin', 'Manager → Developer depth', 'Break & Fix'].map((item) => (
+            {['Battery PCF / CO₂', 'Digital Twin', 'Traceability', 'Demand & Capacity', 'Manager → Developer depth', 'Break & Fix'].map((item) => (
               <span key={item} className="rounded-full border border-white/10 bg-white/[0.025] px-3 py-1.5">{item}</span>
             ))}
           </div>
