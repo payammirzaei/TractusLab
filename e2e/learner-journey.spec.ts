@@ -39,6 +39,28 @@ test.describe("learner journey", () => {
     await expect(page.getByText(/Step 3 of/i)).toBeVisible();
   });
 
+  test("a learner can finish a scenario and solve its complete Boss Fight", async ({ page }) => {
+    await page.goto("/learn/battery-pcf");
+    await page.getByRole("button", { name: /Step 7/i }).click();
+    await expect(page.getByText(/Step 7 of/i)).toBeVisible();
+    await page.getByRole("button", { name: /Transfer the PCF data/i }).click();
+
+    await expect(page.getByText(/Learning flow complete/i)).toBeVisible();
+    await page.getByRole("button", { name: /Start Boss Fight/i }).click();
+    await expect(page.getByRole("heading", { level: 2, name: /The negotiation is rejected/i })).toBeVisible();
+
+    await page.getByRole("button", { name: /Compare the offer policy with consumer attributes/i }).click();
+    await expect(page.getByText(/Root cause found/i)).toBeVisible();
+    await page.getByRole("button", { name: /Next failure/i }).click();
+
+    await page.getByRole("button", { name: /Compare semantic model\/schema versions/i }).click();
+    await expect(page.getByText(/Root cause found/i)).toBeVisible();
+    await page.getByRole("button", { name: /See result/i }).click();
+
+    await expect(page.getByText(/Boss Fight complete/i)).toBeVisible();
+    await expect(page.getByText(/Every root cause was found/i)).toBeVisible();
+  });
+
   test("keyboard users can skip repeated navigation", async ({ page }) => {
     await page.goto("/");
     await page.keyboard.press("Tab");
