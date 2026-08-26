@@ -1,12 +1,12 @@
 {
   "name": "tractuslab",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start -p ${PORT:-3000}",
-    "test": "node --experimental-strip-types --test tests/*.test.ts"
+    "test": "tsx --test tests/*.test.ts"
   },
   "dependencies": {
     "next": "16.3.0",
@@ -19,6 +19,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "tailwindcss": "4.3.0",
+    "tsx": "4.23.12",
     "typescript": "^5.9.0"
   },
   "engines": {
