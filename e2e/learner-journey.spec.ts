@@ -95,6 +95,25 @@ test.describe("learner journey", () => {
     await expect(page.getByRole("heading", { level: 2, name: title })).toBeVisible();
   });
 
+  test("web health endpoint carries the production security shell", async ({ request }) => {
+    const response = await request.get("/api/health");
+    expect(response.status()).toBe(200);
+    expect(await response.json()).toMatchObject({ status: "ok", service: "tractuslab-web" });
+    expect(response.headers()["x-content-type-options"]).toBe("nosniff");
+    expect(response.headers()["x-frame-options"]).toBe("DENY");
+    expect(response.headers()["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+    expect(response.headers()["cache-control"]).toContain("no-store");
+  });
+
+  test("primary product routes stay contained inside the viewport", async ({ page }) => {
+    for (const path of ["/", "/scenarios", "/learn/battery-pcf", "/account"]) {
+      await page.goto(path);
+      await page.waitForLoadState("domcontentloaded");
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      expect(overflow, `${path} should not create body-level horizontal scrolling`).toBeLessThanOrEqual(1);
+    }
+  });
+
   test("unknown routes have a useful recovery path", async ({ page }) => {
     const response = await page.goto("/this-route-does-not-exist");
     expect(response?.status()).toBe(404);
