@@ -1,4 +1,4 @@
-"""initial TractusLab account and learning schema
+"""baseline TractusLab v0.8 learning schema
 
 Revision ID: 0001_initial
 Revises:
@@ -20,13 +20,10 @@ def upgrade() -> None:
     op.create_table(
         "users",
         sa.Column("id", sa.String(length=36), nullable=False),
-        sa.Column("email", sa.String(length=320), nullable=True),
-        sa.Column("password_hash", sa.String(length=512), nullable=True),
         sa.Column("display_name", sa.String(length=120), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index("ix_users_email", "users", ["email"], unique=True)
 
     op.create_table(
         "auth_sessions",
@@ -84,5 +81,4 @@ def downgrade() -> None:
     op.drop_index("ix_auth_sessions_token_hash", table_name="auth_sessions")
     op.drop_index("ix_auth_sessions_user_id", table_name="auth_sessions")
     op.drop_table("auth_sessions")
-    op.drop_index("ix_users_email", table_name="users")
     op.drop_table("users")
