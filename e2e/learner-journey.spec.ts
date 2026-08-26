@@ -41,10 +41,20 @@ test.describe("learner journey", () => {
 
   test("a learner can finish a scenario and solve its complete Boss Fight", async ({ page }) => {
     await page.goto("/learn/battery-pcf");
-    await page.getByRole("button", { name: /Step 7/i }).click();
-    const transferAction = page.getByRole("button", { name: /Transfer the PCF data/i });
-    await expect(transferAction).toBeVisible();
-    await transferAction.click();
+
+    for (const action of [
+      "Enter the dataspace",
+      "Verify the manufacturer",
+      "Request the catalog",
+      "Agree on the meaning",
+      "Check the policy",
+      "Negotiate the agreement",
+      "Transfer the PCF data",
+    ]) {
+      const button = page.getByRole("button", { name: action, exact: true });
+      await expect(button).toBeVisible();
+      await button.click();
+    }
 
     await expect(page.getByText(/Learning flow complete/i)).toBeVisible();
     await page.getByRole("button", { name: /Start Boss Fight/i }).click();
