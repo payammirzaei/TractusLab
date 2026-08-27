@@ -8,6 +8,10 @@ import {
   type BossScores,
 } from "@/lib/boss";
 import {
+  DEMO_BOSS_STORAGE_KEY,
+  isDemoMode as readDemoMode,
+} from "@/lib/demo-mode";
+import {
   clearRemoteBossScores,
   loadRemoteState,
   mergeBossScores,
@@ -17,12 +21,17 @@ import {
 export function useBossScores() {
   const [scores, setScores] = useState<BossScores>({});
   const [ready, setReady] = useState(false);
+  const [demoMode, setDemoMode] = useState(false);
 
   useEffect(() => {
-    const local = parseBossScores(window.localStorage.getItem(BOSS_SCORE_STORAGE_KEY));
+    const demo = readDemoMode(window.localStorage);
+    setDemoMode(demo);
+    const key = demo ? DEMO_BOSS_STORAGE_KEY : BOSS_SCORE_STORAGE_KEY;
+    const local = parseBossScores(window.localStorage.getItem(key));
     setScores(local);
     setReady(true);
 
+    if (demo) return;
     void loadRemoteState()
       .then((remote) => {
         if (!remote) return;
@@ -35,9 +44,10 @@ export function useBossScores() {
 
   useEffect(() => {
     if (!ready) return;
-    window.localStorage.setItem(BOSS_SCORE_STORAGE_KEY, JSON.stringify(scores));
-    void syncBossScores(scores).catch(() => undefined);
-  }, [ready, scores]);
+    const key = demoMode ? DEMO_BOSS_STORAGE_KEY : BOSS_SCORE_STORAGE_KEY;
+    window.localStorage.setItem(key, JSON.stringify(scores));
+    if (!demoMode) void syncBossScores(scores).catch(() => undefined);
+  }, [demoMode, ready, scores]);
 
   const recordBestScore = useCallback((scenarioId: string, score: number) => {
     setScores((current) => saveBestBossScore(current, scenarioId, score));
@@ -45,9 +55,10 @@ export function useBossScores() {
 
   const clearBossScores = useCallback(() => {
     setScores({});
-    window.localStorage.removeItem(BOSS_SCORE_STORAGE_KEY);
-    void clearRemoteBossScores().catch(() => undefined);
+    const demo = readDemoMode(window.localStorage);
+    window.localStorage.removeItem(demo ? DEMO_BOSS_STORAGE_KEY : BOSS_SCORE_STORAGE_KEY);
+    if (!demo) void clearRemoteBossScores().catch(() => undefined);
   }, []);
 
-  return { scores, ready, recordBestScore, clearBossScores };
+  return { scores, ready, demoMode, recordBestScore, clearBossScores };
 }

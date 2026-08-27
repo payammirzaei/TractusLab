@@ -6,6 +6,45 @@ export type FlowDirection =
   | "both"
   | "internal";
 
+export type LessonChallengeKind =
+  | "multiple-choice"
+  | "scenario-decision"
+  | "component-select"
+  | "workflow-order"
+  | "architecture-select";
+
+export type LessonChallengeOption = {
+  id: string;
+  label: string;
+  explanation: string;
+  concept?: string;
+};
+
+type LessonChallengeBase = {
+  id: string;
+  kind: LessonChallengeKind;
+  prompt: string;
+  hint: string;
+  relevantConcept: string;
+  correctExplanation: string;
+  wrongExplanation: string;
+  takeaway: string;
+};
+
+export type ChoiceLessonChallenge = LessonChallengeBase & {
+  kind: Exclude<LessonChallengeKind, "workflow-order">;
+  options: LessonChallengeOption[];
+  correctOptionIds: string[];
+};
+
+export type OrderingLessonChallenge = LessonChallengeBase & {
+  kind: "workflow-order";
+  items: Array<{ id: string; label: string }>;
+  correctOrder: string[];
+};
+
+export type LessonChallenge = ChoiceLessonChallenge | OrderingLessonChallenge;
+
 export type ScenarioStep = {
   id: string;
   technicalName: string;
@@ -20,6 +59,11 @@ export type ScenarioStep = {
   mapFocus: string[];
   glossary: string[];
   payload?: string;
+  simpleExplanation?: string;
+  architectureHint?: string;
+  realWorldExample?: string;
+  keyTakeaway?: string;
+  challenge?: LessonChallenge;
 };
 
 export type ChallengeOption = {
@@ -28,6 +72,7 @@ export type ChallengeOption = {
   explanation: string;
 };
 
+/** Existing Boss Fight challenge. Kept compatible with published scenario content. */
 export type Challenge = {
   id: string;
   title: string;
@@ -37,6 +82,8 @@ export type Challenge = {
   correctOptionId: string;
   options: ChallengeOption[];
   rootCause: string;
+  concept?: string;
+  takeaway?: string;
 };
 
 export type LearningScenario = {
@@ -55,6 +102,13 @@ export type LearningScenario = {
 export type ChallengeResult = {
   correct: boolean;
   explanation: string;
+};
+
+export type LessonChallengeResult = {
+  correct: boolean;
+  explanation: string;
+  relevantConcept: string;
+  takeaway: string;
 };
 
 export function progressPercent(stepIndex: number, stepCount: number): number {
@@ -87,6 +141,39 @@ export function evaluateChallenge(challenge: Challenge, optionId: string): Chall
   };
 }
 
+export function evaluateLessonChallenge(
+  challenge: LessonChallenge,
+  response: string | string[],
+): LessonChallengeResult {
+  if (challenge.kind === "workflow-order") {
+    const answer = Array.isArray(response) ? response : [response];
+    const correct =
+      answer.length === challenge.correctOrder.length &&
+      answer.every((item, index) => item === challenge.correctOrder[index]);
+    return {
+      correct,
+      explanation: correct ? challenge.correctExplanation : challenge.wrongExplanation,
+      relevantConcept: challenge.relevantConcept,
+      takeaway: challenge.takeaway,
+    };
+  }
+
+  const selected = Array.isArray(response) ? response : [response];
+  const expected = [...challenge.correctOptionIds].sort();
+  const actual = [...selected].sort();
+  const correct = expected.length === actual.length && expected.every((id, index) => id === actual[index]);
+  const selectedOption = challenge.options.find((option) => option.id === selected[0]);
+
+  return {
+    correct,
+    explanation: correct
+      ? challenge.correctExplanation
+      : selectedOption?.explanation || challenge.wrongExplanation,
+    relevantConcept: selectedOption?.concept || challenge.relevantConcept,
+    takeaway: challenge.takeaway,
+  };
+}
+
 export function validateScenario(scenario: LearningScenario): string[] {
   const errors: string[] = [];
   const stepIds = new Set<string>();
@@ -102,6 +189,20 @@ export function validateScenario(scenario: LearningScenario): string[] {
 
     if (!step.business.trim() || !step.architecture.trim() || !step.developer.trim()) {
       errors.push(`Step ${step.id} must define all three learning depths.`);
+    }
+
+    if (step.challenge) {
+      if (step.challenge.kind === "workflow-order") {
+        const ids = new Set(step.challenge.items.map((item) => item.id));
+        if (step.challenge.correctOrder.some((id) => !ids.has(id))) {
+          errors.push(`Step challenge ${step.challenge.id} has an invalid workflow order.`);
+        }
+      } else {
+        const ids = new Set(step.challenge.options.map((item) => item.id));
+        if (step.challenge.correctOptionIds.some((id) => !ids.has(id))) {
+          errors.push(`Step challenge ${step.challenge.id} has an invalid correct option.`);
+        }
+      }
     }
   }
 
