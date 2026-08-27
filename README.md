@@ -4,51 +4,64 @@
 
 TractusLab is an interactive, simulation-first learning environment for Tractus-X and dataspace concepts. Learners start with a business problem, follow the exchange visually, switch between Manager / Architect / Developer depth, then diagnose failures in Boss Fights.
 
-## v0.15 — profile, account and authoring UX overhaul
+## v0.16 — pre-production hardening
+
+### API protection
+- Request IDs on every API response for support/debug correlation
+- Security headers: `nosniff`, no-referrer, restrictive permissions policy and same-site resource policy
+- Auth/state responses explicitly use `Cache-Control: no-store`
+- Request-body size guard before mutating endpoints
+- Process-local sliding-window abuse protection for guest sessions, login/register and recovery endpoints
+- Rate limiting is intentionally a first-line guard; shared edge/Redis limiting becomes authoritative before multi-replica scaling
+- CORS methods and request headers are explicitly allow-listed instead of wildcarded
+
+### Audit trail
+- Persistent `audit_events` table via Alembic migration `0005_preproduction_hardening`
+- Privacy-conscious audit records never store passwords, bearer tokens or reset tokens
+- Role changes include explicit previous/new role evidence
+- Account-security, destructive learning resets and content workflow mutations are recorded by the API hardening layer
+- Admins can inspect recent audit events from the Authoring Studio instead of opening the database
+
+### Reliability and recovery UX
+- Safe GET/HEAD retry helper with bounded exponential backoff and request timeout
+- Mutations are deliberately never auto-replayed, preventing duplicate publish/role-change actions
+- Published runtime content and admin/content reads use resilient GET behavior
+- Global offline/back-online status banner
+- Route error recovery screen with retry action
+- Root-shell recovery screen
+- Product-aware 404 and loading skeleton states
+- Packaged learning content remains the non-blocking fallback when server content is unavailable
+
+### Accessibility hardening
+- Global skip-to-content link
+- Strong keyboard focus treatment
+- Shared minimum control height and disabled-state behavior
+- Existing reduced-motion support preserved
+- Admin panel tabs and network state expose accessible status/ARIA semantics
 
 ### Learner profile
-- Profile redesigned as a personal learning dashboard instead of a passive badge page
-- Overall mission-path progress and recommended next mission
+- Personal learning dashboard with overall mission-path progress and recommended next mission
 - Clear scenario, Boss Fight, competency and achievement summaries
-- Unlocked-only achievement view with optional locked-achievement reveal
 - Better certificate-lock explanation using current learning evidence
-- Certificate now renders the real application version instead of a stale hard-coded version
+- Certificate renders the real application version
 - Display-name sync state is visible: local, syncing or synced
 
 ### Account and security UX
-- Shared product navigation and consistent account surfaces
 - Clear guest-to-account explanation before registration
 - Accessible labelled fields and browser autofill hints
 - Password show/hide and non-blocking strength guidance
-- Loading, success and error states use the shared visual system
-- Signed-in account overview makes sync, verification and session controls obvious
+- Signed-in overview makes sync, verification and session controls obvious
 - Session revocation and “sign out other sessions” require a second click
-- Session loading and empty states are explicit
 
 ### Authoring Studio
-- Compose mode is now the default authoring experience
-- Common scenario metadata, business story and learning-step content can be edited through structured fields
-- Manager / Architect / Developer explanations can be edited without touching raw JSON
+- Compose mode is the default authoring experience
+- Common scenario metadata, business story and learning-step content use structured fields
+- Manager / Architect / Developer explanations can be edited without raw JSON
 - Advanced JSON remains available for low-level contract fields and power users
 - Review-readiness meter surfaces validation, metadata, learning-depth and diagnostic completeness
 - Unsaved-draft indicator and browser-leave protection
 - Live learner preview remains visible beside the editor on desktop
-- Team-access drawer now supports search, role descriptions and update feedback
-
-### Journey hardening
-- API integration test covers the full guest → progress → account → logout → login → restored learning evidence journey
-- Pure tests cover account UX copy, password guidance and authoring readiness
-- Existing content, runtime, RBAC, simulator and migration checks remain in CI
-
-### Learner experience
-- Shared learner navigation across Home, Mission Path, Scenario Hub, Simulator and Profile
-- Responsive dark industrial visual system with consistent surfaces, focus states and reduced-motion support
-- Scenario Hub discovery dashboard with search, progress filters, recommended next scenario, loading skeletons and empty states
-- Two-step local progress reset to prevent accidental deletion
-- Mission Path visual milestone timeline with clear locked / ready / in-progress / complete states
-- Simulator shell optimized for lower cognitive load on desktop and mobile
-- Mobile Simulator shows the current question and action first; map/timeline live in an expandable Visual Workspace
-- Boss Fight interface prioritizes symptom, diagnosis options and live score
+- Team/Admin drawer supports search, role management, feedback and audit history
 
 ### Learning product
 - Six business scenarios: Battery PCF, Digital Twin, Traceability, Demand & Capacity, Quality and Circular Economy
@@ -82,7 +95,7 @@ TractusLab is an interactive, simulation-first learning environment for Tractus-
 - Server-side content revisions and history
 - Draft → Review → Approved → Published workflow
 - `learner`, `author`, `reviewer`, `admin` roles
-- Admin Team Access UI for role assignment
+- Admin Team Access UI for role assignment and audit inspection
 - Public endpoint for published content
 
 ## Run frontend locally
@@ -123,11 +136,11 @@ npm run build
 PYTHONPATH=apps/api pytest -q apps/api/tests
 ```
 
-GitHub Actions verifies migrations, API/security/RBAC/content workflow and end-to-end account journey tests, scenario content validation, simulator/runtime/UX tests, TypeScript and the Next.js production build.
+GitHub Actions verifies migrations, API/security/RBAC/audit/content workflow and account journey tests, scenario content validation, simulator/runtime/resilience/UX tests, TypeScript and the Next.js production build.
 
 ## Deployment policy
 
-Railway deployment is intentionally deferred until the product is roughly 90% complete. Until then, development remains GitHub + CI focused.
+The codebase is hardened toward the agreed ~90% deployment gate. Railway remains deferred until CI confirms this pre-production batch is green; the first Railway rollout should use one API replica, PostgreSQL, the Next.js web service and production email configuration. Shared edge rate limiting is required before horizontally scaling the API.
 
 ## Product principles
 
