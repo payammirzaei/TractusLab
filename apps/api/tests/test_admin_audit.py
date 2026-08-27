@@ -34,17 +34,20 @@ def register(client: TestClient, email: str) -> tuple[dict[str, str], str]:
     return {"Authorization": f"Bearer {body['access_token']}"}, body["user"]["id"]
 
 
+def make_admin(user_id: str) -> None:
+    with SessionLocal() as db:
+        admin = db.scalar(select(User).where(User.id == user_id))
+        assert admin is not None
+        admin.role = "admin"
+        db.add(admin)
+        db.commit()
+
+
 def test_admin_role_change_is_visible_in_audit_trail() -> None:
     with TestClient(app) as client:
         admin_headers, admin_id = register(client, "admin@example.com")
         _, target_id = register(client, "author@example.com")
-
-        with SessionLocal() as db:
-            admin = db.scalar(select(User).where(User.id == admin_id))
-            assert admin is not None
-            admin.role = "admin"
-            db.add(admin)
-            db.commit()
+        make_admin(admin_id)
 
         changed = client.patch(
             f"/v1/admin/users/{target_id}/role",
@@ -60,3 +63,50 @@ def test_admin_role_change_is_visible_in_audit_trail() -> None:
         assert event["actor_user_id"] == admin_id
         assert event["target_id"] == target_id
         assert event["details"] == {"from": "learner", "to": "reviewer"}
+
+
+def test_admin_can_create_user_and_creation_is_audited() -> None:
+    with TestClient(app) as client:
+        admin_headers, admin_id = register(client, "admin@example.com")
+        make_admin(admin_id)
+
+        created = client.post(
+            "/v1/admin/users",
+            headers=admin_headers,
+            json={
+                "email": "new.learner@example.com",
+                "password": "temporary-password-123",
+                "display_name": "New Learner",
+                "role": "learner",
+                "email_verified": True,
+            },
+        )
+        assert created.status_code == 201
+        body = created.json()
+        assert body["email"] == "new.learner@example.com"
+        assert body["display_name"] == "New Learner"
+        assert body["role"] == "learner"
+        assert body["email_verified"] is True
+
+        duplicate = client.post(
+            "/v1/admin/users",
+            headers=admin_headers,
+            json={
+                "email": "new.learner@example.com",
+                "password": "another-password-123",
+                "role": "learner",
+                "email_verified": True,
+            },
+        )
+        assert duplicate.status_code == 409
+
+        audit = client.get("/v1/admin/audit-events?limit=20", headers=admin_headers)
+        assert audit.status_code == 200
+        event = next(item for item in audit.json() if item["action"] == "admin.user_created")
+        assert event["actor_user_id"] == admin_id
+        assert event["target_id"] == body["id"]
+        assert event["details"] == {
+            "email": "new.learner@example.com",
+            "role": "learner",
+            "email_verified": True,
+        }
