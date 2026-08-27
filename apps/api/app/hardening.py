@@ -83,7 +83,7 @@ def audit_descriptor(method: str, path: str) -> tuple[str, str | None, str | Non
     if method not in {"POST", "PUT", "PATCH", "DELETE"}:
         return None
     if path.startswith("/v1/admin/"):
-        return None  # Admin endpoints write richer domain-specific events themselves.
+        return None
     if path == "/v1/auth/register":
         return ("auth.account_created", "user", None)
     if path == "/v1/auth/logout":
@@ -140,7 +140,7 @@ class ApiHardeningMiddleware(BaseHTTPMiddleware):
                 try:
                     if int(content_length) > settings.max_request_bytes:
                         return JSONResponse(
-                            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
                             content={"detail": "Request body is too large", "request_id": request_id},
                             headers={"X-Request-ID": request_id},
                         )
@@ -173,7 +173,6 @@ class ApiHardeningMiddleware(BaseHTTPMiddleware):
                     )
                     db.commit()
             except Exception:
-                # Audit logging must not turn a successful user action into a 500.
                 pass
 
         return response
