@@ -97,22 +97,27 @@ export function ScenarioHub() {
           </aside>
         </section>
 
-        <section className="sticky top-[102px] z-20 -mx-2 mb-5 rounded-2xl border border-white/[0.07] bg-[#07110f]/88 p-2 shadow-2xl shadow-black/15 backdrop-blur-xl md:top-[70px] md:mx-0">
+        <section className="sticky top-[102px] z-20 -mx-2 mb-5 rounded-2xl border border-[#dce8e4] bg-white/95 p-2 shadow-[0_12px_34px_rgba(23,68,61,.08)] backdrop-blur-xl md:top-[70px] md:mx-0">
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <div className="no-scrollbar flex gap-1 overflow-x-auto">
               {filters.map((item) => {
                 const count = item.id === "all" ? overview.rows.length : overview.rows.filter((row) => row.status === item.id).length;
                 return (
-                  <button key={item.id} onClick={() => setFilter(item.id)} className={`shrink-0 rounded-xl px-3.5 py-2 text-xs font-semibold transition ${filter === item.id ? "bg-white/10 text-white" : "text-white/38 hover:bg-white/[0.04] hover:text-white/70"}`}>
-                    {item.label} <span className="ml-1 text-white/25">{count}</span>
+                  <button key={item.id} onClick={() => setFilter(item.id)} className={`shrink-0 rounded-xl px-3.5 py-2 text-xs font-semibold transition ${filter === item.id ? "bg-blue-50 text-blue-700" : "text-[#647977] hover:bg-[#f1f7f5] hover:text-[#15302f]"}`}>
+                    {item.label} <span className={`ml-1 ${filter === item.id ? "text-blue-500" : "text-[#91a29f]"}`}>{count}</span>
                   </button>
                 );
               })}
             </div>
             <label className="relative min-w-0 md:w-72">
               <span className="sr-only">Search scenarios</span>
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-white/25">⌕</span>
-              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search use case or asset…" className="w-full rounded-xl border border-white/8 bg-black/25 py-2.5 pl-8 pr-3 text-sm text-white outline-none transition placeholder:text-white/22 focus:border-emerald-300/25 focus:bg-black/35" />
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#5b716d]">⌕</span>
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search use case or asset…"
+                className="w-full rounded-xl border border-[#cddbd7] bg-white py-2.5 pl-8 pr-3 text-sm font-medium text-[#15302f] outline-none transition placeholder:text-[#8da19d] hover:border-[#b8ccc6] focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              />
             </label>
           </div>
         </section>
