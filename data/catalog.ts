@@ -1,13 +1,18 @@
 import { publishedScenarioDocuments } from "./content-registry";
 import type { ScenarioContentDocument } from "../lib/content";
+import { enrichScenarioForLearning } from "../lib/lesson-enrichment";
 
-export const learningScenarios = publishedScenarioDocuments.map((document) => document.scenario);
+export const learningScenarios = publishedScenarioDocuments.map((document) => enrichScenarioForLearning(document.scenario));
 
 let runtimeDocuments: ScenarioContentDocument[] = [...publishedScenarioDocuments];
 
 export function replaceRuntimeScenarioDocuments(documents: ScenarioContentDocument[]) {
   runtimeDocuments = [...documents];
-  learningScenarios.splice(0, learningScenarios.length, ...documents.map((document) => document.scenario));
+  learningScenarios.splice(
+    0,
+    learningScenarios.length,
+    ...documents.map((document) => enrichScenarioForLearning(document.scenario)),
+  );
 }
 
 export function getRuntimeScenarioDocuments() {
