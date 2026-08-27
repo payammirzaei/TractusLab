@@ -28,7 +28,7 @@ export function LearnerNav({ active, eyebrow }: { active?: LearnerNavSection; ey
 
         <div className="flex items-center gap-2">
           <Link href="/account" aria-current={active === "account" ? "page" : undefined} className={`rounded-xl border px-3 py-2 text-xs font-semibold transition ${active === "account" ? "border-emerald-300/18 bg-emerald-300/[0.07] text-emerald-100" : "border-white/9 bg-white/[0.025] text-white/48 hover:border-white/16 hover:text-white/80"}`}>Account</Link>
-          <Link href="/author" aria-current={active === "author" ? "page" : undefined} className={`hidden rounded-xl border px-3 py-2 text-xs font-medium transition lg:inline-flex ${active === "author" ? "border-amber-300/18 bg-amber-300/[0.05] text-amber-100/75" : "border-white/8 text-white/30 hover:text-white/65"}`}>Authoring</Link>
+          <Link href="/author" aria-current={active === "author" ? "page" : undefined} className={`hidden rounded-xl border px-3 py-2 text-xs font-medium transition lg:inline-flex ${active === "author" ? "border-blue-300/20 bg-blue-300/[0.08] text-blue-700" : "border-white/8 text-white/30 hover:text-white/65"}`}>Authoring</Link>
         </div>
       </div>
 
