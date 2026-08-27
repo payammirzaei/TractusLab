@@ -11,6 +11,12 @@ class Settings(BaseSettings):
     expose_dev_tokens: bool = False
     content_admin_emails: str = ""
 
+    rate_limit_enabled: bool = True
+    auth_rate_limit_per_minute: int = 12
+    recovery_rate_limit_per_hour: int = 8
+    guest_rate_limit_per_minute: int = 30
+    max_request_bytes: int = 1_500_000
+
     email_delivery_mode: str = "disabled"
     smtp_host: str | None = None
     smtp_port: int = 587
