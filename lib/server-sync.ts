@@ -13,6 +13,15 @@ export type AccountUser = {
   display_name: string | null;
   is_guest: boolean;
   email_verified: boolean;
+  role: string;
+};
+
+export type AdminManagedUser = {
+  id: string;
+  email: string | null;
+  display_name: string | null;
+  role: "learner" | "author" | "reviewer" | "admin";
+  email_verified: boolean;
 };
 
 export type AccountSession = {
@@ -202,6 +211,42 @@ export async function revokeAccountSession(sessionId: string): Promise<void> {
 export async function revokeOtherAccountSessions(): Promise<void> {
   const response = await apiFetch("/v1/auth/sessions/revoke-others", { method: "POST" });
   if (!response.ok) throw new Error(await errorMessage(response, "Session revoke failed"));
+}
+
+export async function listAdminUsers(): Promise<AdminManagedUser[]> {
+  const response = await apiFetch("/v1/admin/users");
+  if (!response.ok) throw new Error(await errorMessage(response, "User list failed"));
+  return (await response.json()) as AdminManagedUser[];
+}
+
+export async function createAdminUser(input: {
+  email: string;
+  password: string;
+  displayName?: string;
+  role: AdminManagedUser["role"];
+  emailVerified: boolean;
+}): Promise<AdminManagedUser> {
+  const response = await apiFetch("/v1/admin/users", {
+    method: "POST",
+    body: JSON.stringify({
+      email: input.email,
+      password: input.password,
+      display_name: input.displayName || null,
+      role: input.role,
+      email_verified: input.emailVerified,
+    }),
+  });
+  if (!response.ok) throw new Error(await errorMessage(response, "User creation failed"));
+  return (await response.json()) as AdminManagedUser;
+}
+
+export async function updateAdminUserRole(userId: string, role: AdminManagedUser["role"]): Promise<AdminManagedUser> {
+  const response = await apiFetch(`/v1/admin/users/${encodeURIComponent(userId)}/role`, {
+    method: "PATCH",
+    body: JSON.stringify({ role }),
+  });
+  if (!response.ok) throw new Error(await errorMessage(response, "Role update failed"));
+  return (await response.json()) as AdminManagedUser;
 }
 
 export function clearLocalLearningCache(): void {
