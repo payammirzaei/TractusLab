@@ -1,3 +1,4 @@
+import { resilientFetch } from "./http-resilience";
 import type { PublishedContentEnvelope } from "./runtime-content";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
@@ -8,7 +9,7 @@ export function publicContentEnabled(): boolean {
 
 export async function fetchPublishedContent(): Promise<PublishedContentEnvelope[]> {
   if (!API_URL) return [];
-  const response = await fetch(`${API_URL}/v1/content/published`, {
+  const response = await resilientFetch(`${API_URL}/v1/content/published`, {
     method: "GET",
     headers: { Accept: "application/json" },
     cache: "no-store",
