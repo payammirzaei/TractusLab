@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowLeft, ArrowLeftRight, ArrowRight, BrainCircuit, Check, Minus, Sparkles, X } from "lucide-react";
+import { ArrowLeft, ArrowLeftRight, ArrowRight, BrainCircuit, Check, ChevronRight, Minus, Sparkles, X } from "lucide-react";
 import type { FlowDirection, LearningDepth, ScenarioStep } from "@/lib/simulator";
 
 const predictionOptions: Array<{ value: FlowDirection; label: string; hint: string; icon: typeof ArrowRight }> = [
@@ -16,11 +16,13 @@ export function EventTimeline({
   currentIndex,
   depth,
   simpleMode,
+  onStepSelect,
 }: {
   steps: ScenarioStep[];
   currentIndex: number;
   depth: LearningDepth;
   simpleMode: boolean;
+  onStepSelect?: (index: number) => void;
 }) {
   const completed = Math.min(currentIndex, steps.length);
   const [predictions, setPredictions] = useState<Record<string, FlowDirection>>({});
@@ -67,9 +69,28 @@ export function EventTimeline({
             const prediction = predictions[step.id];
             const predictionMade = Boolean(prediction);
             const predictionCorrect = prediction === step.direction;
+            const isClickable = !active && onStepSelect;
 
             return (
-              <div key={step.id} className={`relative grid grid-cols-[38px_1fr] gap-3 rounded-2xl p-2.5 transition-all duration-300 ${active ? "bg-blue-50/80" : "hover:bg-slate-50"}`}>
+              <div
+                key={step.id}
+                className={`relative grid grid-cols-[38px_1fr] gap-3 rounded-2xl p-2.5 transition-all duration-300 ${active ? "bg-blue-50/80" : "hover:bg-slate-50"}`}
+                role={isClickable ? "button" : undefined}
+                tabIndex={isClickable ? 0 : undefined}
+                aria-label={isClickable ? `Open step ${index + 1}: ${simpleMode ? step.question : step.technicalName}` : undefined}
+                onKeyDown={(e) => {
+                  if (isClickable && (e.key === "Enter" || e.key === " ")) {
+                    e.preventDefault();
+                    onStepSelect?.(index);
+                  }
+                }}
+                onClick={() => {
+                  if (isClickable) {
+                    onStepSelect?.(index);
+                  }
+                }}
+                style={isClickable ? { cursor: "pointer" } : undefined}
+              >
                 <div className="relative z-10 flex justify-center pt-1">
                   <div className={`flex h-7 w-7 items-center justify-center rounded-full border text-[10px] font-bold transition-all ${active ? "border-blue-500 bg-blue-500 text-white shadow-[0_0_16px_rgba(37,99,235,.22)]" : done ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-white text-slate-500"}`}>
                     {done ? "✓" : index + 1}
@@ -90,6 +111,9 @@ export function EventTimeline({
                         {active && !predictionMade ? "predict first" : directionLabel(step.direction)}
                       </span>
                     )}
+                    {isClickable && (
+                      <ChevronRight className="ml-auto mt-0.5 flex-shrink-0 text-slate-300 transition-transform group-hover:translate-x-1" size={18} aria-hidden="true" />
+                    )}
                   </div>
 
                   {active && (
@@ -100,7 +124,7 @@ export function EventTimeline({
                         </span>
                         <div>
                           <p className="text-xs font-bold text-slate-900">Predict the next move</p>
-                          <p className="mt-0.5 text-[11px] leading-5 text-slate-600">Don’t memorize the architecture. Read the situation and choose the responsibility that should move now.</p>
+                          <p className="mt-0.5 text-[11px] leading-5 text-slate-600">Don't memorize the architecture. Read the situation and choose the responsibility that should move now.</p>
                         </div>
                       </div>
 
