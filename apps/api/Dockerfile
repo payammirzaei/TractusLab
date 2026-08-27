@@ -8,7 +8,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 RUN addgroup --system tractuslab \
-  && adduser --system --ingroup tractuslab tractuslab
+  && adduser --system --ingroup tractuslab tractuslab \
+  && chown tractuslab:tractuslab /app
 
 COPY apps/api/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
