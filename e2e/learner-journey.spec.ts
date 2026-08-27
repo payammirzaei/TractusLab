@@ -23,7 +23,7 @@ test.describe("learner journey", () => {
       "digital-twin",
       "traceability",
       "demand-capacity",
-      "quality",
+      "quality-management",
       "circular-economy",
     ]) {
       await page.goto(`/learn/${scenarioId}`);
@@ -67,7 +67,7 @@ test.describe("learner journey", () => {
       "Negotiate the agreement",
       "Transfer the PCF data",
     ]) {
-      const button = page.getByRole("button", { name: action, exact: true });
+      const button = page.getByRole("button", { name: new RegExp(action, "i") });
       await expect(button).toBeVisible();
       await button.click();
     }
