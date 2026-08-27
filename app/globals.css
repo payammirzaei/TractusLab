@@ -193,30 +193,35 @@ summary::-webkit-details-marker { display: none; }
   animation: skeleton-shimmer 1.5s infinite;
 }
 
-/* Compatibility layer: existing dark Tailwind utilities now render correctly on the light learning theme. */
+/* Compatibility layer: legacy dark utilities render with readable light-theme contrast. */
 [class~="text-white"] { color: var(--ink) !important; }
-[class~="text-white/18"], [class~="text-white/20"], [class~="text-white/22"], [class~="text-white/23"], [class~="text-white/24"], [class~="text-white/25"], [class~="text-white/26"], [class~="text-white/27"], [class~="text-white/28"], [class~="text-white/30"], [class~="text-white/32"], [class~="text-white/34"], [class~="text-white/35"], [class~="text-white/36"], [class~="text-white/38"], [class~="text-white/40"], [class~="text-white/42"] { color: #758986 !important; }
-[class~="text-white/46"], [class~="text-white/48"], [class~="text-white/50"], [class~="text-white/52"], [class~="text-white/55"], [class~="text-white/58"], [class~="text-white/60"], [class~="text-white/62"], [class~="text-white/65"] { color: #536a67 !important; }
-[class~="text-white/68"], [class~="text-white/70"], [class~="text-white/72"], [class~="text-white/75"], [class~="text-white/80"], [class~="text-white/84"] { color: #314b48 !important; }
+[class~="text-white/18"], [class~="text-white/20"], [class~="text-white/22"], [class~="text-white/23"], [class~="text-white/24"], [class~="text-white/25"], [class~="text-white/26"], [class~="text-white/27"], [class~="text-white/28"], [class~="text-white/30"], [class~="text-white/32"], [class~="text-white/34"], [class~="text-white/35"], [class~="text-white/36"], [class~="text-white/38"], [class~="text-white/40"], [class~="text-white/42"] { color: #708582 !important; }
+[class~="text-white/44"], [class~="text-white/45"], [class~="text-white/46"], [class~="text-white/48"], [class~="text-white/50"], [class~="text-white/52"], [class~="text-white/55"], [class~="text-white/58"], [class~="text-white/60"], [class~="text-white/62"], [class~="text-white/65"] { color: #4f6764 !important; }
+[class~="text-white/68"], [class~="text-white/70"], [class~="text-white/72"], [class~="text-white/75"], [class~="text-white/80"], [class~="text-white/84"] { color: #2f4946 !important; }
 
-[class~="border-white/6"], [class~="border-white/7"], [class~="border-white/8"], [class~="border-white/9"], [class~="border-white/10"], [class~="border-white/13"], [class~="border-white/16"], [class~="border-white/[0.055]"], [class~="border-white/[0.06]"] { border-color: var(--line) !important; }
+[class~="border-white/6"], [class~="border-white/7"], [class~="border-white/8"], [class~="border-white/9"], [class~="border-white/10"], [class~="border-white/12"], [class~="border-white/13"], [class~="border-white/14"], [class~="border-white/15"], [class~="border-white/16"], [class~="border-white/18"], [class~="border-white/[0.055]"], [class~="border-white/[0.06]"], [class~="border-white/[0.065]"] { border-color: var(--line) !important; }
 [class~="border-t-white/8"], [class~="border-b-white/8"] { border-color: var(--line) !important; }
 
-[class~="bg-black/10"], [class~="bg-black/14"], [class~="bg-black/15"], [class~="bg-black/20"] { background-color: rgba(240,247,245,.82) !important; }
-[class~="bg-white/10"], [class~="bg-white/[0.018]"], [class~="bg-white/[0.025]"], [class~="bg-white/[0.035]"], [class~="bg-white/[0.04]"], [class~="bg-white/[0.06]"] { background-color: rgba(255,255,255,.82) !important; }
+[class~="bg-black/10"], [class~="bg-black/12"], [class~="bg-black/14"], [class~="bg-black/15"], [class~="bg-black/20"], [class~="bg-black/22"], [class~="bg-black/25"] { background-color: rgba(240,247,245,.82) !important; }
+[class~="bg-white/10"], [class~="bg-white/[0.018]"], [class~="bg-white/[0.025]"], [class~="bg-white/[0.035]"], [class~="bg-white/[0.04]"], [class~="bg-white/[0.045]"], [class~="bg-white/[0.055]"], [class~="bg-white/[0.06]"] { background-color: rgba(255,255,255,.84) !important; }
+[class~="bg-[#0a1512]"], [class~="bg-[#0a1210]"], [class~="bg-[#0b1714]"], [class~="bg-[#08100e]"], [class~="bg-[#0e211c]"] { background-color: #ffffff !important; }
 
-[class~="text-emerald-100"], [class~="text-emerald-200"], [class~="text-emerald-300"], [class~="text-emerald-100/50"], [class~="text-emerald-100/75"], [class~="text-emerald-200/55"], [class~="text-emerald-200/62"], [class~="text-emerald-200/65"], [class~="text-emerald-200/68"], [class~="text-emerald-200/70"], [class~="text-emerald-200/72"], [class~="text-emerald-300/65"] { color: var(--green-dark) !important; }
+[class~="text-emerald-100"], [class~="text-emerald-200"], [class~="text-emerald-300"], [class~="text-emerald-100/50"], [class~="text-emerald-100/60"], [class~="text-emerald-100/62"], [class~="text-emerald-100/75"], [class~="text-emerald-200/50"], [class~="text-emerald-200/55"], [class~="text-emerald-200/62"], [class~="text-emerald-200/65"], [class~="text-emerald-200/68"], [class~="text-emerald-200/70"], [class~="text-emerald-200/72"], [class~="text-emerald-300/65"] { color: var(--green-dark) !important; }
 [class~="bg-emerald-300"] { background-color: var(--green) !important; color: white !important; }
-[class~="bg-emerald-300/10"], [class~="bg-emerald-300/[0.035]"], [class~="bg-emerald-300/[0.04]"], [class~="bg-emerald-300/[0.045]"], [class~="bg-emerald-300/[0.05]"], [class~="bg-emerald-300/[0.06]"], [class~="bg-emerald-300/[0.07]"], [class~="bg-emerald-300/[0.075]"], [class~="bg-emerald-300/[0.11]"] { background-color: var(--green-soft) !important; }
-[class~="border-emerald-300/12"], [class~="border-emerald-300/13"], [class~="border-emerald-300/14"], [class~="border-emerald-300/15"], [class~="border-emerald-300/18"], [class~="border-emerald-300/20"], [class~="border-emerald-300/25"], [class~="border-emerald-300/30"], [class~="border-emerald-300/35"] { border-color: rgba(15,159,118,.24) !important; }
+[class~="bg-emerald-300/10"], [class~="bg-emerald-300/[0.035]"], [class~="bg-emerald-300/[0.04]"], [class~="bg-emerald-300/[0.045]"], [class~="bg-emerald-300/[0.05]"], [class~="bg-emerald-300/[0.055]"], [class~="bg-emerald-300/[0.06]"], [class~="bg-emerald-300/[0.07]"], [class~="bg-emerald-300/[0.075]"], [class~="bg-emerald-300/[0.09]"], [class~="bg-emerald-300/[0.11]"] { background-color: var(--green-soft) !important; }
+[class~="border-emerald-300/12"], [class~="border-emerald-300/13"], [class~="border-emerald-300/14"], [class~="border-emerald-300/15"], [class~="border-emerald-300/18"], [class~="border-emerald-300/20"], [class~="border-emerald-300/25"], [class~="border-emerald-300/30"], [class~="border-emerald-300/35"], [class~="border-emerald-300/45"] { border-color: rgba(15,159,118,.24) !important; }
 
-[class~="text-cyan-100"], [class~="text-cyan-100/65"], [class~="text-cyan-100/68"], [class~="text-cyan-200"], [class~="text-cyan-300"] { color: var(--blue-dark) !important; }
-[class~="bg-cyan-300/[0.045]"], [class~="bg-cyan-300/[0.055]"], [class~="bg-cyan-300/[0.06]"] { background-color: var(--blue-soft) !important; }
-[class~="border-cyan-300/15"], [class~="border-cyan-300/20"] { border-color: rgba(37,99,235,.22) !important; }
+[class~="text-cyan-100"], [class~="text-cyan-100/52"], [class~="text-cyan-100/55"], [class~="text-cyan-100/60"], [class~="text-cyan-100/65"], [class~="text-cyan-100/68"], [class~="text-cyan-200"], [class~="text-cyan-200/50"], [class~="text-cyan-200/58"], [class~="text-cyan-300"] { color: var(--blue-dark) !important; }
+[class~="bg-cyan-300/10"], [class~="bg-cyan-300/[0.045]"], [class~="bg-cyan-300/[0.055]"], [class~="bg-cyan-300/[0.06]"], [class~="bg-cyan-300/[0.075]"] { background-color: var(--blue-soft) !important; }
+[class~="border-cyan-300/9"], [class~="border-cyan-300/10"], [class~="border-cyan-300/15"], [class~="border-cyan-300/20"], [class~="border-cyan-300/30"], [class~="border-cyan-300/35"] { border-color: rgba(37,99,235,.22) !important; }
+
+[class~="text-sky-100"], [class~="text-sky-100/45"], [class~="text-sky-100/50"], [class~="text-sky-200/50"], [class~="text-sky-300"] { color: var(--blue-dark) !important; }
+[class~="bg-sky-300/[0.04]"], [class~="bg-sky-300/[0.045]"], [class~="bg-sky-300/[0.07]"] { background-color: var(--blue-soft) !important; }
+[class~="border-sky-300/12"], [class~="border-sky-300/13"], [class~="border-sky-300/24"] { border-color: rgba(37,99,235,.22) !important; }
 
 code { color: var(--blue-dark); }
 
-/* deploy-theme-v2 */
+/* deploy-theme-v3-contrast */
 
 @keyframes skeleton-shimmer { 100% { transform: translateX(100%); } }
 
