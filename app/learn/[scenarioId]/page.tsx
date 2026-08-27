@@ -6,5 +6,9 @@ import { RuntimeContentGate } from "@/components/RuntimeContentGate";
 
 export default function ScenarioLearningPage() {
   const params = useParams<{ scenarioId: string }>();
-  return <RuntimeContentGate><LearnSimulatorV2 initialScenarioId={params.scenarioId} /></RuntimeContentGate>;
+  return (
+    <RuntimeContentGate requiredScenarioId={params.scenarioId}>
+      <LearnSimulatorV2 initialScenarioId={params.scenarioId} />
+    </RuntimeContentGate>
+  );
 }
