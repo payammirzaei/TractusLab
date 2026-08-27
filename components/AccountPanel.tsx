@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AccountSecurityPanel } from "@/components/AccountSecurityPanel";
+import { AdminUserManager } from "@/components/AdminUserManager";
 import { LearnerNav } from "@/components/LearnerNav";
 import { accountJourneyCopy, passwordSignals, passwordStrength } from "@/lib/account-ux";
 import {
@@ -208,7 +209,11 @@ function SignedInAccount({ user, loading, error, onLogout, onUserChange }: { use
           <div className="flex items-center gap-5">
             <div className="grid h-16 w-16 place-items-center rounded-[1.4rem] border border-emerald-300/20 bg-emerald-300/10 text-2xl font-semibold text-emerald-100">{(user.display_name || user.email || "L")[0]?.toUpperCase()}</div>
             <div>
-              <div className="flex flex-wrap items-center gap-2"><p className="eyebrow">Signed in</p><span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${user.email_verified ? "bg-emerald-300/10 text-emerald-200" : "bg-amber-300/10 text-amber-100"}`}>{user.email_verified ? "Verified" : "Email pending"}</span></div>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="eyebrow">Signed in</p>
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${user.email_verified ? "bg-emerald-300/10 text-emerald-200" : "bg-amber-300/10 text-amber-100"}`}>{user.email_verified ? "Verified" : "Email pending"}</span>
+                {user.role === "admin" && <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-700">Admin</span>}
+              </div>
               <h1 className="mt-2 text-3xl font-semibold tracking-[-0.035em] md:text-4xl">{user.display_name || "TractusLab learner"}</h1>
               <p className="mt-1 text-sm text-white/40">{user.email}</p>
             </div>
@@ -221,9 +226,10 @@ function SignedInAccount({ user, loading, error, onLogout, onUserChange }: { use
         <div className="relative mt-7 grid gap-3 sm:grid-cols-3">
           <AccountMetric label="Learning state" value="Server synced" detail="with local offline cache" />
           <AccountMetric label="Email" value={user.email_verified ? "Verified" : "Pending"} detail={user.email_verified ? "recovery ready" : "verify when convenient"} />
-          <AccountMetric label="Sessions" value="Revocable" detail="manage devices below" />
+          <AccountMetric label="Role" value={user.role} detail={user.role === "admin" ? "platform administration enabled" : "learning access"} />
         </div>
       </div>
+      {user.role === "admin" && <AdminUserManager />}
       <AccountSecurityPanel user={user} onUserChange={onUserChange} />
       {error && <p aria-live="polite" className="mt-5 rounded-2xl border border-rose-300/15 bg-rose-300/[0.04] p-4 text-sm text-rose-100/80">{error}</p>}
     </section>
@@ -261,5 +267,5 @@ function Benefit({ icon, title, text }: { icon: string; title: string; text: str
 }
 
 function AccountMetric({ label, value, detail }: { label: string; value: string; detail: string }) {
-  return <div className="rounded-2xl border border-white/8 bg-black/10 p-4"><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/25">{label}</p><p className="mt-2 font-semibold">{value}</p><p className="mt-1 text-[11px] text-white/28">{detail}</p></div>;
+  return <div className="rounded-2xl border border-white/8 bg-black/10 p-4"><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/25">{label}</p><p className="mt-2 font-semibold capitalize">{value}</p><p className="mt-1 text-[11px] text-white/28">{detail}</p></div>;
 }
