@@ -79,14 +79,30 @@ jobs:
           set -eu
           trap 'docker rm -f tractuslab-web-smoke >/dev/null 2>&1 || true' EXIT
           docker run -d --name tractuslab-web-smoke -p 3001:3000 tractuslab-web:ci
+
+          ready=false
           for attempt in $(seq 1 30); do
             if curl --fail --silent --show-error http://127.0.0.1:3001/api/health >/dev/null; then
-              exit 0
+              ready=true
+              break
             fi
             sleep 1
           done
-          docker logs tractuslab-web-smoke
-          exit 1
+
+          if [ "$ready" != "true" ]; then
+            docker logs tractuslab-web-smoke
+            exit 1
+          fi
+
+          curl --fail --silent --show-error http://127.0.0.1:3001/ -o /tmp/tractuslab-home.html
+          grep -q "TractusLab" /tmp/tractuslab-home.html
+
+          curl --fail --silent --show-error http://127.0.0.1:3001/learn/battery-pcf -o /tmp/tractuslab-learn.html
+          grep -q "Share a battery product carbon footprint" /tmp/tractuslab-learn.html
+
+          asset_path=$(grep -oE '/_next/static/[^" ]+\.(css|js)' /tmp/tractuslab-home.html | head -n 1)
+          test -n "$asset_path"
+          curl --fail --silent --show-error "http://127.0.0.1:3001${asset_path}" >/dev/null
 
       - name: Build production API container
         run: docker build -f apps/api/Dockerfile -t tractuslab-api:ci .
