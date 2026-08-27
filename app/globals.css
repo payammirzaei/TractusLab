@@ -42,6 +42,7 @@ body::before {
 button, input, textarea, select { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button:not(:disabled), a { cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: .5; }
 ::selection { background: rgba(110, 231, 183, .26); color: white; }
 summary::-webkit-details-marker { display: none; }
 
@@ -49,6 +50,24 @@ summary::-webkit-details-marker { display: none; }
   outline: 2px solid rgba(110, 231, 183, .78);
   outline-offset: 3px;
 }
+
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: 1rem;
+  z-index: 1000;
+  transform: translateY(-180%);
+  border: 1px solid rgba(110,231,183,.45);
+  border-radius: .75rem;
+  background: #07110f;
+  padding: .7rem .9rem;
+  color: #d1fae5;
+  font-size: .8rem;
+  font-weight: 700;
+  box-shadow: 0 12px 36px rgba(0,0,0,.35);
+  transition: transform .16s ease;
+}
+.skip-link:focus { transform: translateY(0); }
 
 .learner-nav {
   position: sticky;
@@ -167,6 +186,7 @@ summary::-webkit-details-marker { display: none; }
 @media print {
   body { background: white !important; color: black !important; }
   body::before { display: none; }
+  .skip-link { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

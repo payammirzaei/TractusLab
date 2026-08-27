@@ -19,6 +19,32 @@ test("all packaged scenario documents are valid and uniquely registered", () => 
 });
 
 
+test("every published scenario is ready for a complete learner experience", () => {
+  for (const document of scenarioDocuments) {
+    assert.ok(document.metadata.summary.trim().length >= 24, `${document.metadata.id} needs a meaningful summary`);
+    assert.ok(document.metadata.tags.length >= 2, `${document.metadata.id} needs discovery tags`);
+    assert.ok(document.metadata.tags.every((tag) => tag.trim().length > 0), `${document.metadata.id} contains an empty tag`);
+    assert.ok(document.scenario.steps.length >= 3, `${document.metadata.id} needs a real learning flow`);
+    assert.ok(document.scenario.challenges.length >= 1, `${document.metadata.id} needs at least one diagnostic`);
+
+    for (const step of document.scenario.steps) {
+      assert.ok(step.question.trim().length >= 8, `${document.metadata.id}/${step.id} needs a learner question`);
+      assert.ok(step.business.trim().length >= 20, `${document.metadata.id}/${step.id} needs Manager depth`);
+      assert.ok(step.architecture.trim().length >= 20, `${document.metadata.id}/${step.id} needs Architect depth`);
+      assert.ok(step.developer.trim().length >= 20, `${document.metadata.id}/${step.id} needs Developer depth`);
+      assert.ok(step.whyNeeded.trim().length >= 12, `${document.metadata.id}/${step.id} needs rationale`);
+      assert.ok(step.withoutIt.trim().length >= 12, `${document.metadata.id}/${step.id} needs failure consequence`);
+    }
+
+    for (const challenge of document.scenario.challenges) {
+      assert.ok(challenge.options.length >= 2, `${document.metadata.id}/${challenge.id} needs diagnostic choices`);
+      assert.ok(challenge.symptom.trim().length >= 8, `${document.metadata.id}/${challenge.id} needs an observable symptom`);
+      assert.ok(challenge.rootCause.trim().length >= 12, `${document.metadata.id}/${challenge.id} needs a root cause explanation`);
+    }
+  }
+});
+
+
 test("scenario template is a valid draft document", () => {
   const template = createScenarioTemplate();
   const result = validateScenarioDocument(template);

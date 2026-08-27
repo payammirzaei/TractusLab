@@ -134,17 +134,17 @@ export function AccountPanel() {
 
               <form onSubmit={submit} className="mt-7 space-y-5">
                 {mode === "register" && (
-                  <Field label="Display name" hint="Used on your learner profile and certificate.">
-                    <input id="display-name" value={displayName} onChange={(event) => setDisplayName(event.target.value)} autoComplete="name" placeholder="Ada Learner" className="input-field" />
+                  <Field htmlFor="display-name" label="Display name" hint="Used on your learner profile and certificate.">
+                    <input id="display-name" aria-describedby="display-name-hint" value={displayName} onChange={(event) => setDisplayName(event.target.value)} autoComplete="name" placeholder="Ada Learner" className="input-field" />
                   </Field>
                 )}
 
-                <Field label="Email">
+                <Field htmlFor="email" label="Email">
                   <input id="email" type="email" required value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" inputMode="email" placeholder="you@example.com" className="input-field" />
                 </Field>
 
                 {mode !== "forgot" && (
-                  <Field label="Password" hint={mode === "register" ? "Minimum 10 characters. Longer passphrases are easier to remember and harder to guess." : undefined}>
+                  <Field htmlFor="password" label="Password" hint={mode === "register" ? "Minimum 10 characters. Longer passphrases are easier to remember and harder to guess." : undefined}>
                     <div className="relative">
                       <input
                         id="password"
@@ -154,6 +154,7 @@ export function AccountPanel() {
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
                         autoComplete={mode === "register" ? "new-password" : "current-password"}
+                        aria-describedby={mode === "register" ? "password-hint" : undefined}
                         placeholder={mode === "register" ? "Create a secure passphrase" : "Your password"}
                         className="input-field pr-20"
                       />
@@ -252,8 +253,14 @@ function AccountSkeleton() {
   return <div className="grid gap-5 py-10 lg:grid-cols-2" aria-label="Loading account"><div className="skeleton-card h-80 rounded-[2rem]" /><div className="skeleton-card h-80 rounded-[2rem]" /></div>;
 }
 
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
-  return <label className="block"><span className="text-xs font-semibold text-white/55">{label}</span>{hint && <span className="ml-2 text-[11px] font-normal text-white/25">{hint}</span>}<div className="mt-2">{children}</div></label>;
+function Field({ htmlFor, label, hint, children }: { htmlFor: string; label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <div className="block">
+      <label htmlFor={htmlFor} className="text-xs font-semibold text-white/55">{label}</label>
+      {hint && <span id={`${htmlFor}-hint`} className="ml-2 text-[11px] font-normal text-white/25">{hint}</span>}
+      <div className="mt-2">{children}</div>
+    </div>
+  );
 }
 
 function Benefit({ icon, title, text }: { icon: string; title: string; text: string }) {

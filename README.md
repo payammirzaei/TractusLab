@@ -37,7 +37,13 @@ TractusLab is an interactive, simulation-first learning environment for Tractus-
 
 ### Journey hardening
 - API integration test covers the full guest → progress → account → logout → login → restored learning evidence journey
-- Pure tests cover account UX copy, password guidance and authoring readiness
+- Browser acceptance tests cover desktop and mobile learner flows, persisted progress, Boss Fights, account registration/login, authoring drafts, 404 recovery and viewport containment
+- Global loading, recoverable error and not-found states are present
+- Keyboard skip navigation, focus treatment and reduced-motion support are included
+- Production security headers and a web health endpoint are enabled
+- Published scenario content has enforceable completeness checks
+- Production Web and API containers are built and smoke-tested in CI
+- API container runs as a non-root user and applies Alembic migrations before startup
 - Existing content, runtime, RBAC, simulator and migration checks remain in CI
 
 ### Learner experience
@@ -121,13 +127,14 @@ npm test
 npm run typecheck
 npm run build
 PYTHONPATH=apps/api pytest -q apps/api/tests
+npm run test:e2e
 ```
 
-GitHub Actions verifies migrations, API/security/RBAC/content workflow and end-to-end account journey tests, scenario content validation, simulator/runtime/UX tests, TypeScript and the Next.js production build.
+GitHub Actions verifies migrations, API/security/RBAC/content workflow and end-to-end account journey tests, scenario content validation, simulator/runtime/UX tests, TypeScript, the Next.js production build, browser acceptance journeys, and production container builds/smoke tests.
 
 ## Deployment policy
 
-Railway deployment is intentionally deferred until the product is roughly 90% complete. Until then, development remains GitHub + CI focused.
+Railway deployment is intentionally deferred until the product reaches the release gate: all planned product and UX work complete, all automated checks green, production containers smoke-tested, no known release-blocking defects, and the branch is considered 100% ready. Until then, Railway remains untouched.
 
 ## Product principles
 

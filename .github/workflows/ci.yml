@@ -10,19 +10,24 @@ on:
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 25
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
-      - name: Install API dependencies
-        run: pip install -r apps/api/requirements.txt
+      - name: Install API test dependencies
+        run: pip install -r apps/api/requirements-dev.txt
+
+      - name: Audit Python runtime dependencies
+        run: |
+          python -m pip install pip-audit
+          pip-audit -r apps/api/requirements.txt
 
       - name: Verify Alembic migration
         working-directory: apps/api
@@ -37,12 +42,16 @@ jobs:
           PYTHONPATH: apps/api
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
+          package-manager-cache: false
 
       - name: Install dependencies
         run: npm install
+
+      - name: Audit web dependencies
+        run: npm audit --audit-level=high
 
       - name: Validate scenario content
         run: npm run content:validate
@@ -55,3 +64,62 @@ jobs:
 
       - name: Build Next.js application
         run: npm run build
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser journey tests
+        run: npm run test:e2e
+
+      - name: Build production web container
+        run: docker build --build-arg NEXT_PUBLIC_API_URL=http://127.0.0.1:8000 -t tractuslab-web:ci .
+
+      - name: Smoke-test production web container
+        run: |
+          set -eu
+          trap 'docker rm -f tractuslab-web-smoke >/dev/null 2>&1 || true' EXIT
+          docker run -d --name tractuslab-web-smoke -p 3001:3000 tractuslab-web:ci
+
+          ready=false
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:3001/api/health >/dev/null; then
+              ready=true
+              break
+            fi
+            sleep 1
+          done
+
+          if [ "$ready" != "true" ]; then
+            docker logs tractuslab-web-smoke
+            exit 1
+          fi
+
+          curl --fail --silent --show-error http://127.0.0.1:3001/ -o /tmp/tractuslab-home.html
+          grep -q "TractusLab" /tmp/tractuslab-home.html
+
+          curl --fail --silent --show-error http://127.0.0.1:3001/learn/battery-pcf -o /tmp/tractuslab-learn.html
+          grep -q "Share a battery product carbon footprint" /tmp/tractuslab-learn.html
+
+          asset_path=$(grep -oE '/_next/static/[^" ]+\.(css|js)' /tmp/tractuslab-home.html | head -n 1)
+          test -n "$asset_path"
+          curl --fail --silent --show-error "http://127.0.0.1:3001${asset_path}" >/dev/null
+
+      - name: Build production API container
+        run: docker build -f apps/api/Dockerfile -t tractuslab-api:ci .
+
+      - name: Smoke-test production API container with migrations
+        run: |
+          set -eu
+          trap 'docker rm -f tractuslab-api-smoke >/dev/null 2>&1 || true' EXIT
+          docker run -d --name tractuslab-api-smoke -p 8001:8000 \
+            -e DATABASE_URL=sqlite+pysqlite:///./container_smoke.db \
+            -e FRONTEND_ORIGIN=http://127.0.0.1:3001 \
+            tractuslab-api:ci
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:8001/health >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs tractuslab-api-smoke
+          exit 1
