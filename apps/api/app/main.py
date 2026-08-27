@@ -23,6 +23,7 @@ from .config import settings
 from .content_api import router as content_router
 from .db import get_db
 from .email_delivery import send_password_reset_email, send_verification_email
+from .hardening import ApiHardeningMiddleware
 from .models import AccountToken, AuthSession, BossScore, ScenarioProgress, User
 from .rbac import apply_bootstrap_role
 from .schemas import (
@@ -46,13 +47,14 @@ from .schemas import (
     UserUpdate,
 )
 
-app = FastAPI(title=settings.app_name, version="0.4.0")
+app = FastAPI(title=settings.app_name, version="0.5.0")
+app.add_middleware(ApiHardeningMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.frontend_origin],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
 )
 app.include_router(content_router)
 app.include_router(admin_router)
