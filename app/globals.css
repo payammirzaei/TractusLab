@@ -216,6 +216,8 @@ summary::-webkit-details-marker { display: none; }
 
 code { color: var(--blue-dark); }
 
+/* deploy-theme-v2 */
+
 @keyframes skeleton-shimmer { 100% { transform: translateX(100%); } }
 
 @media (max-width: 767px) {
