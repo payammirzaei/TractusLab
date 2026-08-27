@@ -192,7 +192,7 @@ export function LearnSimulatorV2({ initialScenarioId }: { initialScenarioId?: st
             <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.08fr)_minmax(410px,.92fr)] xl:items-start">
               <div className="hidden space-y-5 xl:block">
                 {simpleMode ? <SimpleStoryMap supplier={scenario.supplierLabel} manufacturer={scenario.manufacturerLabel} /> : <DataspaceMap focus={complete ? ["supplier", "dataspace", "manufacturer"] : step.mapFocus} direction={complete ? "both" : step.direction} />}
-                <EventTimeline steps={scenario.steps} currentIndex={complete ? scenario.steps.length : stepIndex} depth={depth} simpleMode={simpleMode} onStepSelect={setStepIndex} />
+                <EventTimeline steps={scenario.steps} currentIndex={complete ? scenario.steps.length : stepIndex} depth={depth} simpleMode={simpleMode} />
               </div>
 
               <aside className="surface-card p-5 md:p-6 xl:sticky xl:top-24">
@@ -232,7 +232,7 @@ export function LearnSimulatorV2({ initialScenarioId }: { initialScenarioId?: st
                 <summary className="flex cursor-pointer items-center justify-between gap-4 p-4 text-sm font-semibold text-white/62"><span><span className="mr-2 text-cyan-300">◇</span>Open visual workspace</span><span className="text-xs font-normal text-white/28">Map + timeline</span></summary>
                 <div className="space-y-4 border-t border-white/7 p-3 md:p-4">
                   {simpleMode ? <SimpleStoryMap supplier={scenario.supplierLabel} manufacturer={scenario.manufacturerLabel} /> : <DataspaceMap focus={complete ? ["supplier", "dataspace", "manufacturer"] : step.mapFocus} direction={complete ? "both" : step.direction} />}
-                  <EventTimeline steps={scenario.steps} currentIndex={complete ? scenario.steps.length : stepIndex} depth={depth} simpleMode={simpleMode} onStepSelect={setStepIndex} />
+                  <EventTimeline steps={scenario.steps} currentIndex={complete ? scenario.steps.length : stepIndex} depth={depth} simpleMode={simpleMode} />
                 </div>
               </details>
             </section>
