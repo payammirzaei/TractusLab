@@ -1,4 +1,5 @@
 import type { ScenarioContentDocument } from "./content";
+import { resilientFetch } from "./http-resilience";
 import { getCurrentAccount, serverSyncEnabled, type AccountUser } from "./server-sync";
 import type { ContentRole, ContentStatus } from "./content-workflow";
 
@@ -45,6 +46,16 @@ export type AdminUser = {
   email_verified: boolean;
 };
 
+export type AuditEvent = {
+  id: string;
+  actor_user_id: string | null;
+  action: string;
+  target_type: string | null;
+  target_id: string | null;
+  details: Record<string, unknown>;
+  created_at: string;
+};
+
 async function contentFetch(path: string, init: RequestInit = {}): Promise<Response> {
   if (!serverSyncEnabled() || typeof window === "undefined") throw new Error("Content backend is not configured");
   await getCurrentAccount();
@@ -53,7 +64,11 @@ async function contentFetch(path: string, init: RequestInit = {}): Promise<Respo
   const headers = new Headers(init.headers);
   headers.set("Authorization", `Bearer ${token}`);
   if (init.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
-  return fetch(`${API_URL}${path}`, { ...init, headers });
+  const request = `${API_URL}${path}`;
+  const method = (init.method ?? "GET").toUpperCase();
+  return method === "GET" || method === "HEAD"
+    ? resilientFetch(request, { ...init, headers, cache: "no-store" })
+    : fetch(request, { ...init, headers });
 }
 
 async function errorMessage(response: Response, fallback: string): Promise<string> {
@@ -138,4 +153,10 @@ export async function updateContentUserRole(userId: string, role: ContentRole): 
   });
   if (!response.ok) throw new Error(await errorMessage(response, "Could not update content role"));
   return (await response.json()) as AdminUser;
+}
+
+export async function listAuditEvents(limit = 100): Promise<AuditEvent[]> {
+  const response = await contentFetch(`/v1/admin/audit-events?limit=${Math.max(1, Math.min(250, limit))}`);
+  if (!response.ok) throw new Error(await errorMessage(response, "Could not load audit trail"));
+  return (await response.json()) as AuditEvent[];
 }
