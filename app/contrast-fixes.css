@@ -1,0 +1,59 @@
+/* Light-theme contrast fixes for the interactive simulator.
+   The simulator still contains a handful of legacy dark-theme Tailwind utilities;
+   map the challenge-state colors to accessible light-theme values here. */
+
+[class~="text-amber-300"],
+[class~="text-amber-200"],
+[class~="text-amber-200/58"],
+[class~="text-amber-100"],
+[class~="text-amber-100/50"],
+[class~="text-amber-100/58"],
+[class~="text-amber-100/60"],
+[class~="text-amber-100/62"] {
+  color: #9a5b00 !important;
+}
+
+[class~="border-amber-200/9"],
+[class~="border-amber-300/9"],
+[class~="border-amber-300/10"],
+[class~="border-amber-300/12"],
+[class~="border-amber-300/14"],
+[class~="border-amber-300/15"] {
+  border-color: rgba(180, 112, 0, 0.28) !important;
+}
+
+[class~="bg-amber-300/[0.035]"],
+[class~="bg-amber-300/[0.04]"],
+[class~="bg-amber-300/[0.045]"],
+[class~="bg-amber-300/[0.055]"] {
+  background-color: #fff8e8 !important;
+}
+
+[class~="text-rose-300"] {
+  color: #be123c !important;
+}
+
+[class~="border-rose-300/28"] {
+  border-color: rgba(190, 18, 60, 0.28) !important;
+}
+
+[class~="bg-rose-300/[0.055]"] {
+  background-color: #fff1f3 !important;
+}
+
+/* Selected diagnostic answers need explicit text contrast on the light cards. */
+button[class*="bg-rose-300"] span,
+button[class*="bg-emerald-300"] span {
+  color: var(--ink);
+}
+
+/* Keep hint text and diagnostic symptom readable without making the UI visually heavy. */
+button[class*="text-amber-200"] {
+  background: #fffdf7;
+  color: #8a4f00 !important;
+}
+
+button[class*="text-amber-200"]:hover {
+  background: #fff7e2 !important;
+  color: #6f3f00 !important;
+}
