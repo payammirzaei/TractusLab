@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { NetworkStatus } from "@/components/NetworkStatus";
 import "./globals.css";
+import "./contrast-fixes.css";
 
 export const metadata: Metadata = {
   title: "TractusLab",
