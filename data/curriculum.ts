@@ -42,7 +42,7 @@ export const curriculumMissions: MissionDefinition[] = [
     title: "Collaborate on quality data",
     description: "Use governed exchange and shared meaning to investigate a quality problem without losing data sovereignty.",
     kind: "scenario",
-    scenarioId: "quality",
+    scenarioId: "quality-management",
     prerequisiteIds: ["traceability"],
     competencyIds: ["quality-collaboration"],
   },
@@ -94,7 +94,7 @@ export const competencies: CompetencyDefinition[] = [
     id: "quality-collaboration",
     label: "Quality Collaboration",
     description: "Can explain how shared meaning and governed access support quality investigations.",
-    scenarioId: "quality",
+    scenarioId: "quality-management",
   },
   {
     id: "circularity-data",
