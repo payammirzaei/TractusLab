@@ -1,14 +1,24 @@
+"use client";
+
+import { useI18n } from "@/components/I18nProvider";
 import type { LearningDepth } from "@/lib/simulator";
 
-const depthOptions: Array<{ id: LearningDepth; label: string; short: string; description: string; icon: string }> = [
-  { id: "business", label: "Manager", short: "Manager", description: "Business meaning", icon: "◎" },
-  { id: "architecture", label: "Architect", short: "Architect", description: "System relationships", icon: "◇" },
-  { id: "developer", label: "Developer", short: "Developer", description: "Technical behavior", icon: "{ }" },
-];
+const depthIcons: Record<LearningDepth, string> = {
+  business: "◎",
+  architecture: "◇",
+  developer: "{ }",
+};
 
 export function DepthSwitcher({ value, onChange }: { value: LearningDepth; onChange: (depth: LearningDepth) => void }) {
+  const { t } = useI18n();
+  const depthOptions: Array<{ id: LearningDepth; label: string; description: string; icon: string }> = [
+    { id: "business", label: t("depth.manager"), description: t("depth.managerDescription"), icon: depthIcons.business },
+    { id: "architecture", label: t("depth.architect"), description: t("depth.architectDescription"), icon: depthIcons.architecture },
+    { id: "developer", label: t("depth.developer"), description: t("depth.developerDescription"), icon: depthIcons.developer },
+  ];
+
   return (
-    <div className="grid min-w-0 grid-cols-3 rounded-2xl border border-slate-200 bg-white/85 p-1 shadow-sm" aria-label="Learning depth">
+    <div className="grid min-w-0 grid-cols-3 rounded-2xl border border-slate-200 bg-white/85 p-1 shadow-sm" aria-label={t("depth.aria")}>
       {depthOptions.map((option) => {
         const active = value === option.id;
         return (
@@ -22,7 +32,7 @@ export function DepthSwitcher({ value, onChange }: { value: LearningDepth; onCha
           >
             <span className="flex items-center gap-1.5">
               <span className={`hidden text-[10px] font-black sm:inline ${active ? "text-white/80" : "text-slate-400"}`}>{option.icon}</span>
-              <span className="truncate text-[11px] font-semibold md:text-xs">{option.short}</span>
+              <span className="truncate text-[11px] font-semibold md:text-xs">{option.label}</span>
             </span>
             <span className={`mt-0.5 hidden truncate text-[9px] lg:block ${active ? "text-white/80" : "text-slate-500"}`}>{option.description}</span>
           </button>

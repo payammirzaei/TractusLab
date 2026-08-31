@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
+import { useI18n } from "@/components/I18nProvider";
 import type { FlowDirection } from "@/lib/simulator";
 
 type MapNode = {
@@ -28,44 +29,48 @@ type MapNode = {
   learnerTip: string;
 };
 
-const nodeDetails: MapNode[] = [
-  { id: "supplier", label: "Data Provider", description: "Owns the source data and decides under which conditions it can be shared.", learnerTip: "Think: control stays with the company that owns the data." },
-  { id: "supplier-edc", label: "Provider EDC", description: "The provider-side connector exposes offers, negotiates conditions and sends governed data.", learnerTip: "Think: this is the provider's controlled doorway into the dataspace." },
-  { id: "dataspace", label: "Governed Exchange", description: "A shared trust and governance model connects participants without creating one central data lake.", learnerTip: "Think: connect companies without taking ownership of their data." },
-  { id: "consumer-edc", label: "Consumer EDC", description: "The consumer-side connector discovers offers, negotiates access and receives data under agreed rules.", learnerTip: "Think: this is the consumer's controlled doorway into the dataspace." },
-  { id: "manufacturer", label: "Data Consumer", description: "Needs trusted external data for a concrete business purpose and must respect the provider's usage rules.", learnerTip: "Think: needing the data does not automatically grant access to it." },
-  { id: "identity", label: "Identity", description: "Establishes who the participants are before sensitive business interactions can be trusted.", learnerTip: "No trusted identity → no meaningful business trust." },
-  { id: "policy", label: "Policy", description: "Defines what a consumer may do with data, under which conditions and for how long.", learnerTip: "Access is not just yes/no; usage conditions travel with the agreement." },
-  { id: "dtr", label: "Digital Twin Registry", description: "Helps participants find the digital representation of a physical asset using shared identifiers.", learnerTip: "Use it when the question is: where is the twin for this asset?" },
-  { id: "semantic-model", label: "Semantics", description: "Gives both sides the same machine-readable meaning for fields, structures and business concepts.", learnerTip: "Same JSON shape does not guarantee the same meaning." },
-  { id: "digital-twin", label: "Digital Twin", description: "Represents the relevant asset and exposes structured information about it through standardized submodels.", learnerTip: "The twin is the digital business object; the registry only helps you find it." },
-];
-
-const services: ReadonlyArray<{
+type MapService = {
   id: string;
   label: string;
   icon: LucideIcon;
   hint: string;
-}> = [
-  { id: "identity", label: "Identity", icon: CircleCheck, hint: "Who are you?" },
-  { id: "policy", label: "Policy", icon: ShieldCheck, hint: "May I use it?" },
-  { id: "dtr", label: "DTR", icon: Database, hint: "Where is the twin?" },
-  { id: "semantic-model", label: "Semantics", icon: Braces, hint: "What does it mean?" },
-  { id: "digital-twin", label: "Digital Twin", icon: Box, hint: "Which asset?" },
-] as const;
+};
 
 export function DataspaceMap({ focus, direction }: { focus: string[]; direction: FlowDirection }) {
+  const { t } = useI18n();
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const isActive = (id: string) => focus.includes(id);
-  const selectedNode = useMemo(() => nodeDetails.find((node) => node.id === selectedNodeId) ?? null, [selectedNodeId]);
+
+  const nodeDetails: MapNode[] = useMemo(() => [
+    { id: "supplier", label: t("map.provider"), description: t("map.providerDescription"), learnerTip: t("map.providerTip") },
+    { id: "supplier-edc", label: t("map.providerEdc"), description: t("map.providerEdcDescription"), learnerTip: t("map.providerEdcTip") },
+    { id: "dataspace", label: t("map.exchange"), description: t("map.exchangeDescription"), learnerTip: t("map.exchangeTip") },
+    { id: "consumer-edc", label: t("map.consumerEdc"), description: t("map.consumerEdcDescription"), learnerTip: t("map.consumerEdcTip") },
+    { id: "manufacturer", label: t("map.consumer"), description: t("map.consumerDescription"), learnerTip: t("map.consumerTip") },
+    { id: "identity", label: t("map.identity"), description: t("map.identityDescription"), learnerTip: t("map.identityTip") },
+    { id: "policy", label: t("map.policy"), description: t("map.policyDescription"), learnerTip: t("map.policyTip") },
+    { id: "dtr", label: t("map.dtr"), description: t("map.dtrDescription"), learnerTip: t("map.dtrTip") },
+    { id: "semantic-model", label: t("map.semantics"), description: t("map.semanticsDescription"), learnerTip: t("map.semanticsTip") },
+    { id: "digital-twin", label: t("map.digitalTwin"), description: t("map.digitalTwinDescription"), learnerTip: t("map.digitalTwinTip") },
+  ], [t]);
+
+  const services: MapService[] = useMemo(() => [
+    { id: "identity", label: t("map.identity"), icon: CircleCheck, hint: t("map.who") },
+    { id: "policy", label: t("map.policy"), icon: ShieldCheck, hint: t("map.mayUse") },
+    { id: "dtr", label: "DTR", icon: Database, hint: t("map.whereTwin") },
+    { id: "semantic-model", label: t("map.semantics"), icon: Braces, hint: t("map.whatMean") },
+    { id: "digital-twin", label: t("map.digitalTwin"), icon: Box, hint: t("map.whichAsset") },
+  ], [t]);
+
+  const selectedNode = useMemo(() => nodeDetails.find((node) => node.id === selectedNodeId) ?? null, [nodeDetails, selectedNodeId]);
   const routeActive = ["supplier", "supplier-edc", "dataspace", "consumer-edc", "manufacturer"].some(isActive);
   const directionText = direction === "supplier-to-manufacturer"
-    ? "Provider → Consumer"
+    ? t("timeline.providerConsumer")
     : direction === "manufacturer-to-supplier"
-      ? "Consumer → Provider"
+      ? t("timeline.consumerProvider")
       : direction === "both"
-        ? "Two-way exchange"
-        : "Inside one participant";
+        ? t("timeline.twoWayExchange")
+        : t("map.insideParticipant");
 
   const DirectionIcon = direction === "supplier-to-manufacturer"
     ? ArrowRight
@@ -83,12 +88,12 @@ export function DataspaceMap({ focus, direction }: { focus: string[]; direction:
         <div>
           <div className="flex items-center gap-2">
             <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,.28)]" />
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Live dataspace</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">{t("map.title")}</p>
           </div>
-          <p className="mt-2 text-sm text-slate-600">Follow the highlight, then click any component to inspect what job it performs.</p>
+          <p className="mt-2 text-sm text-slate-600">{t("map.intro")}</p>
           <div className="mt-2 flex items-center gap-1.5 text-[10px] font-medium text-blue-700">
             <MousePointerClick size={13} strokeWidth={2} aria-hidden="true" />
-            Interactive map · explore instead of memorizing
+            {t("map.interactive")}
           </div>
         </div>
         <div className="flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5">
@@ -98,8 +103,8 @@ export function DataspaceMap({ focus, direction }: { focus: string[]; direction:
       </div>
 
       <div className="relative mt-6 grid gap-3 md:grid-cols-[1fr_auto_1.2fr_auto_1fr] md:items-center">
-        <Participant id="supplier" title="Data Provider" subtitle="Owns the source data" icon={Factory} active={isActive("supplier")} selected={selectedNodeId === "supplier"} onSelect={setSelectedNodeId} />
-        <RouteConnector active={isActive("supplier-edc") || isActive("dataspace")} reverse={direction === "manufacturer-to-supplier"} label="Provider EDC" nodeActive={isActive("supplier-edc")} nodeId="supplier-edc" selected={selectedNodeId === "supplier-edc"} onSelect={setSelectedNodeId} />
+        <Participant id="supplier" title={t("map.provider")} subtitle={t("map.providerSubtitle")} icon={Factory} active={isActive("supplier")} selected={selectedNodeId === "supplier"} onSelect={setSelectedNodeId} />
+        <RouteConnector active={isActive("supplier-edc") || isActive("dataspace")} reverse={direction === "manufacturer-to-supplier"} label={t("map.providerEdc")} nodeActive={isActive("supplier-edc")} nodeId="supplier-edc" selected={selectedNodeId === "supplier-edc"} onSelect={setSelectedNodeId} />
 
         <button
           type="button"
@@ -111,18 +116,18 @@ export function DataspaceMap({ focus, direction }: { focus: string[]; direction:
           <div className={`mx-auto flex h-11 w-11 items-center justify-center rounded-2xl border ${isActive("dataspace") ? "border-emerald-200 bg-white text-emerald-700" : selectedNodeId === "dataspace" ? "border-blue-200 bg-white text-blue-700" : "border-slate-200 bg-slate-50 text-slate-500"}`}>
             <Network size={22} strokeWidth={1.8} aria-hidden="true" />
           </div>
-          <p className="mt-3 text-sm font-semibold text-slate-900">Governed exchange</p>
-          <p className="mt-1 text-[11px] leading-5 text-slate-500">No shared central database. Each participant keeps control.</p>
+          <p className="mt-3 text-sm font-semibold text-slate-900">{t("map.exchangeCard")}</p>
+          <p className="mt-1 text-[11px] leading-5 text-slate-500">{t("map.exchangeCardDetail")}</p>
         </button>
 
-        <RouteConnector active={isActive("consumer-edc") || isActive("dataspace")} reverse={direction === "manufacturer-to-supplier"} label="Consumer EDC" nodeActive={isActive("consumer-edc")} nodeId="consumer-edc" selected={selectedNodeId === "consumer-edc"} onSelect={setSelectedNodeId} />
-        <Participant id="manufacturer" title="Data Consumer" subtitle="Needs trusted data" icon={Car} active={isActive("manufacturer")} selected={selectedNodeId === "manufacturer"} onSelect={setSelectedNodeId} />
+        <RouteConnector active={isActive("consumer-edc") || isActive("dataspace")} reverse={direction === "manufacturer-to-supplier"} label={t("map.consumerEdc")} nodeActive={isActive("consumer-edc")} nodeId="consumer-edc" selected={selectedNodeId === "consumer-edc"} onSelect={setSelectedNodeId} />
+        <Participant id="manufacturer" title={t("map.consumer")} subtitle={t("map.consumerSubtitle")} icon={Car} active={isActive("manufacturer")} selected={selectedNodeId === "manufacturer"} onSelect={setSelectedNodeId} />
       </div>
 
       <div className="mt-5 rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-3">
         <div className="mb-3 flex items-center justify-between px-1">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">Supporting responsibilities</p>
-          <p className="text-[10px] text-slate-500">Click one to inspect its job</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">{t("map.supporting")}</p>
+          <p className="text-[10px] text-slate-500">{t("map.inspect")}</p>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
           {services.map((service) => <ServiceNode key={service.id} service={service} active={isActive(service.id)} selected={selectedNodeId === service.id} onSelect={setSelectedNodeId} />)}
@@ -138,10 +143,10 @@ export function DataspaceMap({ focus, direction }: { focus: string[]; direction:
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-sm font-bold text-slate-900">{selectedNode.label}</p>
-                <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${isActive(selectedNode.id) ? "bg-emerald-100 text-emerald-700" : "bg-white text-slate-500"}`}>{isActive(selectedNode.id) ? "Active now" : "Not active yet"}</span>
+                <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${isActive(selectedNode.id) ? "bg-emerald-100 text-emerald-700" : "bg-white text-slate-500"}`}>{isActive(selectedNode.id) ? t("map.activeNow") : t("map.notActive")}</span>
               </div>
               <p className="mt-1.5 text-xs leading-5 text-slate-600">{selectedNode.description}</p>
-              <p className="mt-2 text-[11px] font-medium leading-5 text-blue-700">Memory hook: {selectedNode.learnerTip}</p>
+              <p className="mt-2 text-[11px] font-medium leading-5 text-blue-700">{t("map.memoryHook", { tip: selectedNode.learnerTip })}</p>
             </div>
           </div>
         </div>
@@ -177,7 +182,7 @@ function RouteConnector({ active, reverse, label, nodeActive, nodeId, selected, 
   );
 }
 
-function ServiceNode({ service, active, selected, onSelect }: { service: (typeof services)[number]; active: boolean; selected: boolean; onSelect: (id: string) => void }) {
+function ServiceNode({ service, active, selected, onSelect }: { service: MapService; active: boolean; selected: boolean; onSelect: (id: string) => void }) {
   const Icon = service.icon;
   return (
     <button type="button" onClick={() => onSelect(service.id)} data-map-node={service.id} className={`rounded-2xl border p-3 text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm ${active ? "border-blue-200 bg-blue-50 text-slate-900 shadow-[0_8px_20px_rgba(37,99,235,.08)]" : selected ? "border-blue-300 bg-blue-50 text-slate-900" : "border-slate-200 bg-white text-slate-600 hover:border-blue-200"}`}>
