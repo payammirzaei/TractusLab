@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { I18nProvider } from "@/components/I18nProvider";
 import { NetworkStatus } from "@/components/NetworkStatus";
 import "./globals.css";
 import "./contrast-fixes.css";
@@ -12,9 +13,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en">
       <body>
-        <a href="#main-content" className="skip-link">Skip to main content</a>
-        <div id="main-content" tabIndex={-1}>{children}</div>
-        <NetworkStatus />
+        <I18nProvider>
+          <a href="#main-content" className="skip-link">Skip to main content</a>
+          <div id="main-content" tabIndex={-1}>{children}</div>
+          <NetworkStatus />
+        </I18nProvider>
       </body>
     </html>
   );
