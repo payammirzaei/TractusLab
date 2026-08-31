@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { getScenarioById, learningScenarios, setCatalogLocale } from "../data/catalog";
 import { competencies, curriculumMissions } from "../data/curriculum";
+import { accountCopy } from "../lib/account-i18n";
 import { translate } from "../lib/i18n";
 
 const scenarioIds = [
@@ -20,6 +21,18 @@ test("UI messages translate to German and interpolate values", () => {
   assert.equal(translate("de", "timeline.correct"), "Richtig");
   assert.equal(translate("de", "map.provider"), "Datenanbieter");
   assert.equal(translate("en", "nav.path"), "Mission path");
+});
+
+test("guest account copy is available in English and German", () => {
+  const english = accountCopy("en");
+  const german = accountCopy("de");
+
+  assert.equal(english.createAccount, "Create account");
+  assert.equal(german.createAccount, "Konto erstellen");
+  assert.equal(german.signIn, "Anmelden");
+  assert.match(german.guestIntro, /Gast/);
+  assert.equal(german.signals.minimum, "Mindestens 10 Zeichen");
+  assert.notEqual(german.journeys.register[1], english.journeys.register[1]);
 });
 
 test("all demo scenarios localize without changing learning logic identifiers", () => {
