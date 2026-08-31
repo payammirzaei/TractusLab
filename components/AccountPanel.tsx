@@ -4,8 +4,10 @@ import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AccountSecurityPanel } from "@/components/AccountSecurityPanel";
 import { AdminUserManager } from "@/components/AdminUserManager";
+import { useI18n } from "@/components/I18nProvider";
 import { LearnerNav } from "@/components/LearnerNav";
-import { accountJourneyCopy, passwordSignals, passwordStrength } from "@/lib/account-ux";
+import { accountCopy } from "@/lib/account-i18n";
+import { passwordSignals, passwordStrength } from "@/lib/account-ux";
 import {
   getCurrentAccount,
   loginAccount,
@@ -19,6 +21,8 @@ import {
 type Mode = "register" | "login" | "forgot";
 
 export function AccountPanel() {
+  const { locale } = useI18n();
+  const text = accountCopy(locale);
   const [user, setUser] = useState<AccountUser | null>(null);
   const [mode, setMode] = useState<Mode>("register");
   const [email, setEmail] = useState("");
@@ -31,7 +35,7 @@ export function AccountPanel() {
   const [debugResetToken, setDebugResetToken] = useState<string | null>(null);
 
   const enabled = serverSyncEnabled();
-  const copy = accountJourneyCopy(mode);
+  const journey = text.journeys[mode];
   const strength = useMemo(() => passwordStrength(password), [password]);
   const signals = useMemo(() => passwordSignals(password), [password]);
 
@@ -74,7 +78,7 @@ export function AccountPanel() {
       setPassword("");
       if (mode === "login") window.location.href = "/profile";
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : text.genericError);
     } finally {
       setLoading(false);
     }
@@ -87,19 +91,19 @@ export function AccountPanel() {
       await logoutAccount();
       window.location.href = "/";
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Logout failed");
+      setError(err instanceof Error ? err.message : text.logoutError);
       setLoading(false);
     }
   }
 
   return (
     <main className="min-h-screen pb-16">
-      <LearnerNav eyebrow="Account & security" />
+      <LearnerNav active="account" eyebrow={text.navEyebrow} />
       <div className="mx-auto max-w-[1240px] px-4 md:px-8">
         {!enabled ? (
-          <OfflineAccountState />
+          <OfflineAccountState text={text} />
         ) : loading && !user ? (
-          <AccountSkeleton />
+          <AccountSkeleton label={text.loadingAccount} />
         ) : user && !user.is_guest ? (
           <SignedInAccount user={user} loading={loading} error={error} onLogout={logout} onUserChange={setUser} />
         ) : (
@@ -107,45 +111,45 @@ export function AccountPanel() {
             <aside className="surface-hero relative overflow-hidden p-7 md:p-9">
               <div className="absolute -left-16 -top-16 h-56 w-56 rounded-full bg-emerald-300/[0.07] blur-3xl" aria-hidden="true" />
               <div className="relative">
-                <p className="eyebrow">Learning account</p>
-                <h1 className="mt-4 max-w-xl text-4xl font-semibold tracking-[-0.045em] md:text-5xl">Your learning evidence should travel with you.</h1>
-                <p className="mt-5 max-w-xl text-base leading-7 text-white/48">Start as a guest, create an account when it becomes useful, and keep progress without forcing sign-up before the first lesson.</p>
+                <p className="eyebrow">{text.guestEyebrow}</p>
+                <h1 className="mt-4 max-w-xl text-4xl font-semibold tracking-[-0.045em] md:text-5xl">{text.guestTitle}</h1>
+                <p className="mt-5 max-w-xl text-base leading-7 text-white/48">{text.guestIntro}</p>
 
                 <div className="mt-8 space-y-3">
-                  <Benefit icon="↗" title="Guest progress upgrades in place" text="Registering converts the current guest identity instead of starting over." />
-                  <Benefit icon="◎" title="Server-side learning state" text="Progress and Boss Fight evidence can follow the account across sessions." />
-                  <Benefit icon="◈" title="Revocable sessions" text="See active sign-ins and revoke access when a device is no longer trusted." />
+                  <Benefit icon="↗" title={text.benefits[0][0]} text={text.benefits[0][1]} />
+                  <Benefit icon="◎" title={text.benefits[1][0]} text={text.benefits[1][1]} />
+                  <Benefit icon="◈" title={text.benefits[2][0]} text={text.benefits[2][1]} />
                 </div>
               </div>
             </aside>
 
             <section className="surface-panel p-6 md:p-8">
               {mode !== "forgot" && (
-                <div className="grid grid-cols-2 rounded-2xl border border-white/8 bg-black/15 p-1" role="tablist" aria-label="Account action">
-                  <button role="tab" aria-selected={mode === "register"} onClick={() => switchMode("register")} className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition ${mode === "register" ? "bg-emerald-300 text-[#07110f]" : "text-white/42 hover:text-white/72"}`}>Create account</button>
-                  <button role="tab" aria-selected={mode === "login"} onClick={() => switchMode("login")} className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition ${mode === "login" ? "bg-emerald-300 text-[#07110f]" : "text-white/42 hover:text-white/72"}`}>Sign in</button>
+                <div className="grid grid-cols-2 rounded-2xl border border-white/8 bg-black/15 p-1" role="tablist" aria-label={text.accountAction}>
+                  <button role="tab" aria-selected={mode === "register"} onClick={() => switchMode("register")} className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition ${mode === "register" ? "bg-emerald-300 text-[#07110f]" : "text-white/42 hover:text-white/72"}`}>{text.createAccount}</button>
+                  <button role="tab" aria-selected={mode === "login"} onClick={() => switchMode("login")} className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition ${mode === "login" ? "bg-emerald-300 text-[#07110f]" : "text-white/42 hover:text-white/72"}`}>{text.signIn}</button>
                 </div>
               )}
 
               <div className="mt-7">
-                <p className="eyebrow">{copy.eyebrow}</p>
-                <h2 className="mt-3 text-3xl font-semibold tracking-[-0.035em]">{copy.title}</h2>
-                <p className="mt-3 max-w-xl text-sm leading-6 text-white/42">{copy.description}</p>
+                <p className="eyebrow">{journey[0]}</p>
+                <h2 className="mt-3 text-3xl font-semibold tracking-[-0.035em]">{journey[1]}</h2>
+                <p className="mt-3 max-w-xl text-sm leading-6 text-white/42">{journey[2]}</p>
               </div>
 
               <form onSubmit={submit} className="mt-7 space-y-5">
                 {mode === "register" && (
-                  <Field label="Display name" hint="Used on your learner profile and certificate.">
-                    <input id="display-name" value={displayName} onChange={(event) => setDisplayName(event.target.value)} autoComplete="name" placeholder="Ada Learner" className="input-field" />
+                  <Field label={text.displayName} hint={text.displayNameHint}>
+                    <input id="display-name" value={displayName} onChange={(event) => setDisplayName(event.target.value)} autoComplete="name" placeholder={text.displayNamePlaceholder} className="input-field" />
                   </Field>
                 )}
 
-                <Field label="Email">
-                  <input id="email" type="email" required value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" inputMode="email" placeholder="you@example.com" className="input-field" />
+                <Field label={text.email}>
+                  <input id="email" type="email" required value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" inputMode="email" placeholder={text.emailPlaceholder} className="input-field" />
                 </Field>
 
                 {mode !== "forgot" && (
-                  <Field label="Password" hint={mode === "register" ? "Minimum 10 characters. Longer passphrases are easier to remember and harder to guess." : undefined}>
+                  <Field label={text.password} hint={mode === "register" ? text.passwordHint : undefined}>
                     <div className="relative">
                       <input
                         id="password"
@@ -155,17 +159,17 @@ export function AccountPanel() {
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
                         autoComplete={mode === "register" ? "new-password" : "current-password"}
-                        placeholder={mode === "register" ? "Create a secure passphrase" : "Your password"}
+                        placeholder={mode === "register" ? text.passwordCreatePlaceholder : text.passwordPlaceholder}
                         className="input-field pr-20"
                       />
-                      <button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xs font-semibold text-white/35 hover:text-white/70" aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? "Hide" : "Show"}</button>
+                      <button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xs font-semibold text-white/35 hover:text-white/70" aria-label={showPassword ? text.hidePassword : text.showPassword}>{showPassword ? text.hide : text.show}</button>
                     </div>
                     {mode === "register" && password && (
                       <div className="mt-3 rounded-2xl border border-white/8 bg-black/10 p-3">
-                        <div className="flex items-center justify-between gap-3 text-xs"><span className="text-white/35">Password strength</span><span className="font-semibold text-white/65">{strength.label}</span></div>
+                        <div className="flex items-center justify-between gap-3 text-xs"><span className="text-white/35">{text.passwordStrength}</span><span className="font-semibold text-white/65">{text.strength[strength.label]}</span></div>
                         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.06]"><div className="h-full rounded-full bg-emerald-300 transition-all" style={{ width: `${strength.score}%` }} /></div>
                         <div className="mt-3 grid gap-1.5 sm:grid-cols-2">
-                          {signals.map((signal) => <span key={signal.id} className={`text-[11px] ${signal.met ? "text-emerald-200/70" : "text-white/28"}`}>{signal.met ? "✓" : "○"} {signal.label}</span>)}
+                          {signals.map((signal) => <span key={signal.id} className={`text-[11px] ${signal.met ? "text-emerald-200/70" : "text-white/28"}`}>{signal.met ? "✓" : "○"} {text.signals[signal.id]}</span>)}
                         </div>
                       </div>
                     )}
@@ -175,21 +179,21 @@ export function AccountPanel() {
                 <div aria-live="polite" className="min-h-5">
                   {message && <p className="rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.04] p-3 text-sm leading-6 text-emerald-100/75">{message}</p>}
                   {error && <p className="rounded-2xl border border-rose-300/15 bg-rose-300/[0.04] p-3 text-sm leading-6 text-rose-100/80">{error}</p>}
-                  {debugResetToken && <p className="mt-2 text-xs leading-5 text-amber-100/70">Dev mode: <Link className="underline underline-offset-4" href={`/account/reset?token=${encodeURIComponent(debugResetToken)}`}>open password reset link</Link></p>}
+                  {debugResetToken && <p className="mt-2 text-xs leading-5 text-amber-100/70">{text.devMode} <Link className="underline underline-offset-4" href={`/account/reset?token=${encodeURIComponent(debugResetToken)}`}>{text.openReset}</Link></p>}
                 </div>
 
                 <button disabled={loading} className="button-primary w-full py-3 text-sm disabled:cursor-not-allowed disabled:opacity-45">
-                  {loading ? "Working…" : copy.action}
+                  {loading ? text.working : journey[3]}
                 </button>
               </form>
 
               <div className="mt-5 text-center text-sm text-white/38">
                 {mode === "login" ? (
-                  <button type="button" onClick={() => switchMode("forgot")} className="hover:text-white/70">Forgot password?</button>
+                  <button type="button" onClick={() => switchMode("forgot")} className="hover:text-white/70">{text.forgotPassword}</button>
                 ) : mode === "forgot" ? (
-                  <button type="button" onClick={() => switchMode("login")} className="hover:text-white/70">← Back to sign in</button>
+                  <button type="button" onClick={() => switchMode("login")} className="hover:text-white/70">{text.backSignIn}</button>
                 ) : (
-                  <p className="text-xs leading-5">No forced sign-up: local learning remains available even without an account.</p>
+                  <p className="text-xs leading-5">{text.noForcedSignup}</p>
                 )}
               </div>
             </section>
@@ -236,17 +240,17 @@ function SignedInAccount({ user, loading, error, onLogout, onUserChange }: { use
   );
 }
 
-function OfflineAccountState() {
+function OfflineAccountState({ text }: { text: ReturnType<typeof accountCopy> }) {
   return (
     <section className="py-10 md:py-16">
       <div className="surface-hero mx-auto max-w-4xl p-7 md:p-10">
         <div className="grid gap-7 md:grid-cols-[auto_1fr] md:items-start">
           <div className="grid h-16 w-16 place-items-center rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.06] text-2xl text-cyan-100">◎</div>
           <div>
-            <p className="eyebrow">Local-first mode</p>
-            <h1 className="mt-3 text-3xl font-semibold tracking-[-0.035em] md:text-5xl">Accounts are ready, but intentionally not deployed yet.</h1>
-            <p className="mt-4 max-w-2xl leading-7 text-white/46">TractusLab keeps learning fully usable with local storage while the backend remains undeployed. When the API is enabled later, account sync activates through <code className="rounded bg-black/20 px-1.5 py-0.5 text-cyan-100/65">NEXT_PUBLIC_API_URL</code>.</p>
-            <div className="mt-7 flex flex-wrap gap-3"><Link href="/path" className="button-primary">Continue learning →</Link><Link href="/profile" className="button-ghost">View local profile</Link></div>
+            <p className="eyebrow">{text.offlineEyebrow}</p>
+            <h1 className="mt-3 text-3xl font-semibold tracking-[-0.035em] md:text-5xl">{text.offlineTitle}</h1>
+            <p className="mt-4 max-w-2xl leading-7 text-white/46">{text.offlineText} <code className="rounded bg-black/20 px-1.5 py-0.5 text-cyan-100/65">NEXT_PUBLIC_API_URL</code>.</p>
+            <div className="mt-7 flex flex-wrap gap-3"><Link href="/path" className="button-primary">{text.continueLearning}</Link><Link href="/profile" className="button-ghost">{text.localProfile}</Link></div>
           </div>
         </div>
       </div>
@@ -254,8 +258,8 @@ function OfflineAccountState() {
   );
 }
 
-function AccountSkeleton() {
-  return <div className="grid gap-5 py-10 lg:grid-cols-2" aria-label="Loading account"><div className="skeleton-card h-80 rounded-[2rem]" /><div className="skeleton-card h-80 rounded-[2rem]" /></div>;
+function AccountSkeleton({ label }: { label: string }) {
+  return <div className="grid gap-5 py-10 lg:grid-cols-2" aria-label={label}><div className="skeleton-card h-80 rounded-[2rem]" /><div className="skeleton-card h-80 rounded-[2rem]" /></div>;
 }
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
