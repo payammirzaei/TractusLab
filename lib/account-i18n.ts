@@ -55,7 +55,7 @@ const en = {
   offlineText: "TractusLab keeps learning fully usable with local storage while the backend remains undeployed. When the API is enabled later, account sync activates through",
   continueLearning: "Continue learning →",
   localProfile: "View local profile",
-} as const;
+};
 
 const de: typeof en = {
   navEyebrow: "Konto & Sicherheit",
