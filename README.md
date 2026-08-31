@@ -18,6 +18,10 @@
 
 </div>
 
+<p align="center">
+  <img src="docs/readme/learning-journey.svg" width="100%" alt="Animated TractusLab learning journey" />
+</p>
+
 ---
 
 ## The observation
@@ -49,6 +53,10 @@ Diagnosis + score + mastery
 ---
 
 # 1. Learn by running the story
+
+<p align="center">
+  <img src="docs/readme/simulation-flow.svg" width="100%" alt="Animated TractusLab simulation-first learning flow" />
+</p>
 
 Every scenario starts with a real business need instead of an acronym.
 
@@ -225,36 +233,11 @@ The Authoring Studio also exposes team access, feedback and recent audit history
 
 # 8. Runtime architecture
 
+<p align="center">
+  <img src="docs/readme/runtime-topology.svg" width="100%" alt="Animated TractusLab Railway runtime topology" />
+</p>
+
 TractusLab deliberately separates the learning experience from durable account/content state.
-
-```text
-                       TRACTUSLAB
-
- Browser
-    │
-    ▼
- Next.js 16 + React 19
- Learning Experience
-    │
-    ├── packaged scenario content
-    ├── local/offline learning cache
-    │
-    └──────────── HTTPS ─────────────┐
-                                     ▼
-                               FastAPI API
-                                     │
-                     ┌───────────────┼───────────────┐
-                     ▼               ▼               ▼
-                 Accounts        Content         Audit
-                 Sessions        Revisions       Events
-                 Progress        Workflow
-                     │               │               │
-                     └───────────────┼───────────────┘
-                                     ▼
-                                PostgreSQL
-
-                         Runtime: Railway
-```
 
 The frontend remains useful even when runtime content is temporarily unavailable because packaged learning content is a non-blocking fallback.
 
