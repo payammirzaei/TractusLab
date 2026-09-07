@@ -60,6 +60,8 @@ def rate_limit_rule(request: Request) -> tuple[str, int, int] | None:
     path = request.url.path
     if path == "/v1/session/guest":
         return ("guest", settings.guest_rate_limit_per_minute, 60)
+    if path == "/v1/analytics/visit":
+        return ("analytics", 120, 60)
     if path in {"/v1/auth/login", "/v1/auth/register"}:
         return ("auth", settings.auth_rate_limit_per_minute, 60)
     if path in {"/v1/auth/password-reset/request", "/v1/auth/email-verification/request"}:
