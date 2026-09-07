@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Response, status
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
@@ -24,7 +24,7 @@ from .content_api import router as content_router
 from .db import get_db
 from .email_delivery import send_password_reset_email, send_verification_email
 from .hardening import ApiHardeningMiddleware
-from .models import AccountToken, AuthSession, BossScore, ScenarioProgress, User
+from .models import AccountToken, AuthSession, BossScore, ScenarioProgress, User, VisitEvent
 from .rbac import apply_bootstrap_role
 from .schemas import (
     BossScoreResponse,
@@ -45,6 +45,7 @@ from .schemas import (
     StateResponse,
     UserResponse,
     UserUpdate,
+    VisitEventRequest,
 )
 
 app = FastAPI(title=settings.app_name, version="0.5.0")
@@ -94,6 +95,20 @@ def action_response(message: str, raw_token: str | None = None) -> EmailActionRe
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.post("/v1/analytics/visit", status_code=status.HTTP_204_NO_CONTENT)
+def record_visit(payload: VisitEventRequest, request: Request, db: Session = Depends(get_db)) -> Response:
+    event = VisitEvent(
+        visitor_id=payload.visitor_id,
+        path=payload.path,
+        referrer_host=payload.referrer_host,
+        user_agent=(request.headers.get("user-agent") or "")[:300] or None,
+        language=payload.language,
+    )
+    db.add(event)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @app.post("/v1/session/guest", response_model=SessionResponse, status_code=status.HTTP_201_CREATED)
