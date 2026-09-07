@@ -3,11 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   getContentAccount,
+  getVisitorAnalytics,
   listAuditEvents,
   listContentUsers,
   updateContentUserRole,
   type AdminUser,
   type AuditEvent,
+  type VisitorAnalytics,
 } from "@/lib/content-server";
 import type { ContentRole } from "@/lib/content-workflow";
 import { serverSyncEnabled } from "@/lib/server-sync";
@@ -20,7 +22,7 @@ const roleDescriptions: Record<ContentRole, string> = {
   admin: "Publishes and manages access",
 };
 
-type PanelTab = "team" | "audit";
+type PanelTab = "team" | "audit" | "visitors";
 
 export function ContentTeamAccess() {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -29,6 +31,7 @@ export function ContentTeamAccess() {
   const [tab, setTab] = useState<PanelTab>("team");
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
+  const [analytics, setAnalytics] = useState<VisitorAnalytics | null>(null);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -39,9 +42,14 @@ export function ContentTeamAccess() {
     setLoading(true);
     setError("");
     try {
-      const [nextUsers, nextAudit] = await Promise.all([listContentUsers(), listAuditEvents(80)]);
+      const [nextUsers, nextAudit, nextAnalytics] = await Promise.all([
+        listContentUsers(),
+        listAuditEvents(80),
+        getVisitorAnalytics(80),
+      ]);
       setUsers(nextUsers);
       setAuditEvents(nextAudit);
+      setAnalytics(nextAnalytics);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load admin data");
     } finally {
@@ -91,12 +99,13 @@ export function ContentTeamAccess() {
         <section className="mb-3 w-[min(94vw,500px)] overflow-hidden rounded-[1.75rem] border border-white/12 bg-[#091310]/96 shadow-2xl shadow-black/50 backdrop-blur-xl" aria-label="Content administration">
           <div className="border-b border-white/8 p-5">
             <div className="flex items-start justify-between gap-4">
-              <div><p className="eyebrow">Administration</p><h2 className="mt-2 text-xl font-semibold">Team & audit trail</h2><p className="mt-1 text-xs leading-5 text-white/35">Manage responsibility and inspect sensitive workflow changes without opening the database.</p></div>
+              <div><p className="eyebrow">Administration</p><h2 className="mt-2 text-xl font-semibold">Team, audit & visitors</h2><p className="mt-1 text-xs leading-5 text-white/35">Manage access and inspect production activity without opening the database.</p></div>
               <button onClick={() => setOpen(false)} className="button-ghost px-2.5 py-1.5 text-[11px]">Close</button>
             </div>
-            <div className="mt-4 grid grid-cols-2 rounded-2xl border border-white/8 bg-black/15 p-1" role="tablist" aria-label="Admin panel sections">
-              <button role="tab" aria-selected={tab === "team"} onClick={() => setTab("team")} className={`rounded-xl px-3 py-2 text-xs font-semibold ${tab === "team" ? "bg-white/10 text-white" : "text-white/35"}`}>Team access</button>
-              <button role="tab" aria-selected={tab === "audit"} onClick={() => setTab("audit")} className={`rounded-xl px-3 py-2 text-xs font-semibold ${tab === "audit" ? "bg-white/10 text-white" : "text-white/35"}`}>Audit trail</button>
+            <div className="mt-4 grid grid-cols-3 rounded-2xl border border-white/8 bg-black/15 p-1" role="tablist" aria-label="Admin panel sections">
+              <button role="tab" aria-selected={tab === "team"} onClick={() => setTab("team")} className={`rounded-xl px-2 py-2 text-[11px] font-semibold ${tab === "team" ? "bg-white/10 text-white" : "text-white/35"}`}>Team</button>
+              <button role="tab" aria-selected={tab === "audit"} onClick={() => setTab("audit")} className={`rounded-xl px-2 py-2 text-[11px] font-semibold ${tab === "audit" ? "bg-white/10 text-white" : "text-white/35"}`}>Audit</button>
+              <button role="tab" aria-selected={tab === "visitors"} onClick={() => setTab("visitors")} className={`rounded-xl px-2 py-2 text-[11px] font-semibold ${tab === "visitors" ? "bg-white/10 text-white" : "text-white/35"}`}>Visitors</button>
             </div>
             {tab === "team" && <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search people or roles…" aria-label="Search team access" className="input-field mt-4" />}
           </div>
@@ -130,6 +139,48 @@ export function ContentTeamAccess() {
                 </article>
               );
             })}
+
+
+            {!loading && tab === "visitors" && analytics && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-3 px-1">
+                  <div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/35">Production visitors</p><p className="mt-1 text-[10px] text-white/22">Anonymous browser IDs · no raw IP stored</p></div>
+                  <button type="button" onClick={() => void loadAdminData()} className="button-ghost px-3 py-1.5 text-[10px]">Refresh</button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-2xl border border-emerald-300/12 bg-emerald-300/[0.035] p-3"><p className="text-[10px] uppercase tracking-wider text-white/25">Page views</p><p className="mt-1 text-2xl font-semibold">{analytics.total_page_views}</p><p className="mt-1 text-[10px] text-emerald-200/45">{analytics.page_views_last_24h} last 24h</p></div>
+                  <div className="rounded-2xl border border-sky-300/12 bg-sky-300/[0.035] p-3"><p className="text-[10px] uppercase tracking-wider text-white/25">Unique visitors</p><p className="mt-1 text-2xl font-semibold">{analytics.unique_visitors}</p><p className="mt-1 text-[10px] text-sky-200/45">{analytics.unique_visitors_last_24h} last 24h</p></div>
+                </div>
+
+                <div className="rounded-2xl border border-white/8 bg-black/10 p-3.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/30">Top pages</p>
+                  <div className="mt-2 space-y-1.5">
+                    {analytics.top_pages.length === 0 && <p className="text-xs text-white/28">No visits recorded yet.</p>}
+                    {analytics.top_pages.map((page) => (
+                      <div key={page.path} className="flex items-center justify-between gap-3 text-xs">
+                        <span className="truncate font-mono text-white/52">{page.path}</span>
+                        <span className="rounded-full border border-white/8 px-2 py-0.5 text-[10px] text-white/38">{page.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-2 flex items-center justify-between px-1"><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/30">Recent visits</p><span className="text-[9px] text-white/20">{analytics.recent_visits.length} shown</span></div>
+                  {analytics.recent_visits.length === 0 && <p className="rounded-2xl border border-dashed border-white/10 p-5 text-sm text-white/35">No visitor activity yet.</p>}
+                  {analytics.recent_visits.map((visit) => (
+                    <article key={visit.id} className="mb-2 rounded-2xl border border-white/8 bg-black/10 p-3.5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0"><p className="truncate font-mono text-xs font-medium text-white/70">{visit.path}</p><p className="mt-1 truncate text-[10px] text-white/26">{visit.referrer_host ? `from ${visit.referrer_host} · ` : ""}{visit.language || "unknown language"} · visitor {visit.visitor_id.slice(0, 8)}</p></div>
+                        <time className="shrink-0 text-[9px] text-white/22" dateTime={visit.created_at}>{new Date(visit.created_at).toLocaleString()}</time>
+                      </div>
+                      {visit.user_agent && <p className="mt-2 truncate text-[9px] text-white/16">{visit.user_agent}</p>}
+                    </article>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div aria-live="polite">{message && <p className="p-2 text-xs text-emerald-200/70">✓ {message}</p>}{error && <p className="p-2 text-xs leading-5 text-rose-200/75">{error}</p>}</div>
           </div>

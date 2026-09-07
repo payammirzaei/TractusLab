@@ -1,16 +1,16 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .audit import recent_audit_events, record_audit
 from .auth import hash_password
 from .db import get_db
-from .models import User
+from .models import User, VisitEvent
 from .rbac import VALID_ROLES, require_roles
 
 router = APIRouter(prefix="/v1/admin", tags=["admin"])
@@ -44,6 +44,30 @@ class AuditEventResponse(BaseModel):
     target_id: str | None
     details: dict
     created_at: datetime
+
+
+class VisitorPageCount(BaseModel):
+    path: str
+    count: int
+
+
+class VisitorEventResponse(BaseModel):
+    id: str
+    visitor_id: str
+    path: str
+    referrer_host: str | None
+    user_agent: str | None
+    language: str | None
+    created_at: datetime
+
+
+class VisitorAnalyticsResponse(BaseModel):
+    total_page_views: int
+    unique_visitors: int
+    page_views_last_24h: int
+    unique_visitors_last_24h: int
+    top_pages: list[VisitorPageCount]
+    recent_visits: list[VisitorEventResponse]
 
 
 def admin_user_response(user: User) -> AdminUserResponse:
@@ -121,6 +145,57 @@ def list_audit_events(
         )
         for row in recent_audit_events(db, limit)
     ]
+
+
+@router.get("/analytics/visitors", response_model=VisitorAnalyticsResponse)
+def visitor_analytics(
+    limit: int = Query(default=80, ge=1, le=250),
+    _: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db),
+) -> VisitorAnalyticsResponse:
+    since = datetime.now(timezone.utc) - timedelta(hours=24)
+
+    total_page_views = int(db.scalar(select(func.count()).select_from(VisitEvent)) or 0)
+    unique_visitors = int(db.scalar(select(func.count(func.distinct(VisitEvent.visitor_id)))) or 0)
+    page_views_last_24h = int(
+        db.scalar(select(func.count()).select_from(VisitEvent).where(VisitEvent.created_at >= since)) or 0
+    )
+    unique_visitors_last_24h = int(
+        db.scalar(
+            select(func.count(func.distinct(VisitEvent.visitor_id))).where(VisitEvent.created_at >= since)
+        )
+        or 0
+    )
+
+    top_rows = db.execute(
+        select(VisitEvent.path, func.count(VisitEvent.id).label("count"))
+        .group_by(VisitEvent.path)
+        .order_by(func.count(VisitEvent.id).desc(), VisitEvent.path.asc())
+        .limit(8)
+    ).all()
+    recent_rows = db.scalars(
+        select(VisitEvent).order_by(VisitEvent.created_at.desc()).limit(limit)
+    ).all()
+
+    return VisitorAnalyticsResponse(
+        total_page_views=total_page_views,
+        unique_visitors=unique_visitors,
+        page_views_last_24h=page_views_last_24h,
+        unique_visitors_last_24h=unique_visitors_last_24h,
+        top_pages=[VisitorPageCount(path=row.path, count=int(row.count)) for row in top_rows],
+        recent_visits=[
+            VisitorEventResponse(
+                id=row.id,
+                visitor_id=row.visitor_id,
+                path=row.path,
+                referrer_host=row.referrer_host,
+                user_agent=row.user_agent,
+                language=row.language,
+                created_at=row.created_at,
+            )
+            for row in recent_rows
+        ],
+    )
 
 
 @router.patch("/users/{user_id}/role", response_model=AdminUserResponse)
