@@ -110,3 +110,44 @@ def test_admin_can_create_user_and_creation_is_audited() -> None:
             "role": "learner",
             "email_verified": True,
         }
+
+
+
+def test_visitor_analytics_are_admin_only_and_aggregate_visits() -> None:
+    with TestClient(app) as client:
+        learner_headers, _ = register(client, "learner@example.com")
+        admin_headers, admin_id = register(client, "admin@example.com")
+        make_admin(admin_id)
+
+        for visitor_id, path in [
+            ("visitor-alpha-1234", "/"),
+            ("visitor-alpha-1234", "/learn"),
+            ("visitor-beta-5678", "/learn"),
+        ]:
+            response = client.post(
+                "/v1/analytics/visit",
+                json={
+                    "visitor_id": visitor_id,
+                    "path": path,
+                    "referrer_host": "example.com",
+                    "language": "en-US",
+                },
+                headers={"User-Agent": "Analytics-Test/1.0"},
+            )
+            assert response.status_code == 204
+
+        forbidden = client.get("/v1/admin/analytics/visitors", headers=learner_headers)
+        assert forbidden.status_code == 403
+
+        analytics = client.get("/v1/admin/analytics/visitors?limit=10", headers=admin_headers)
+        assert analytics.status_code == 200
+        body = analytics.json()
+
+        assert body["total_page_views"] == 3
+        assert body["unique_visitors"] == 2
+        assert body["page_views_last_24h"] == 3
+        assert body["unique_visitors_last_24h"] == 2
+        assert body["top_pages"][0] == {"path": "/learn", "count": 2}
+        assert len(body["recent_visits"]) == 3
+        assert body["recent_visits"][0]["visitor_id"] in {"visitor-alpha-1234", "visitor-beta-5678"}
+        assert body["recent_visits"][0]["referrer_host"] == "example.com"
