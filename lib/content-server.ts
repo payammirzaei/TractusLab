@@ -56,6 +56,23 @@ export type AuditEvent = {
   created_at: string;
 };
 
+export type VisitorAnalytics = {
+  total_page_views: number;
+  unique_visitors: number;
+  page_views_last_24h: number;
+  unique_visitors_last_24h: number;
+  top_pages: Array<{ path: string; count: number }>;
+  recent_visits: Array<{
+    id: string;
+    visitor_id: string;
+    path: string;
+    referrer_host: string | null;
+    user_agent: string | null;
+    language: string | null;
+    created_at: string;
+  }>;
+};
+
 async function contentFetch(path: string, init: RequestInit = {}): Promise<Response> {
   if (!serverSyncEnabled() || typeof window === "undefined") throw new Error("Content backend is not configured");
   await getCurrentAccount();
@@ -159,4 +176,12 @@ export async function listAuditEvents(limit = 100): Promise<AuditEvent[]> {
   const response = await contentFetch(`/v1/admin/audit-events?limit=${Math.max(1, Math.min(250, limit))}`);
   if (!response.ok) throw new Error(await errorMessage(response, "Could not load audit trail"));
   return (await response.json()) as AuditEvent[];
+}
+
+
+export async function getVisitorAnalytics(limit = 80): Promise<VisitorAnalytics> {
+  const safeLimit = Math.max(1, Math.min(250, limit));
+  const response = await contentFetch(`/v1/admin/analytics/visitors?limit=${safeLimit}`);
+  if (!response.ok) throw new Error(await errorMessage(response, "Could not load visitor analytics"));
+  return (await response.json()) as VisitorAnalytics;
 }
