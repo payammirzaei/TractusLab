@@ -68,3 +68,29 @@ def test_successful_profile_mutation_is_audited_without_sensitive_payload() -> N
             assert "password" not in str(event.details).lower()
             assert "token" not in str(event.details).lower()
             assert event.details.get("request_id")
+
+
+def test_anonymous_visit_is_persisted_without_ip_address() -> None:
+    with TestClient(app) as client:
+        response = client.post(
+            "/v1/analytics/visit",
+            json={
+                "visitor_id": "visitor-test-1234",
+                "path": "/learn",
+                "referrer_host": "example.com",
+                "language": "en-US",
+            },
+            headers={"User-Agent": "TractusLab-Test/1.0"},
+        )
+        assert response.status_code == 204
+
+        with SessionLocal() as db:
+            from app.models import VisitEvent
+
+            event = db.scalar(select(VisitEvent).where(VisitEvent.visitor_id == "visitor-test-1234"))
+            assert event is not None
+            assert event.path == "/learn"
+            assert event.referrer_host == "example.com"
+            assert event.language == "en-US"
+            assert event.user_agent == "TractusLab-Test/1.0"
+            assert "ip" not in event.__table__.columns.keys()

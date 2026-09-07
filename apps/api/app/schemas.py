@@ -3,6 +3,13 @@ from datetime import datetime
 from pydantic import BaseModel, EmailStr, Field
 
 
+class VisitEventRequest(BaseModel):
+    visitor_id: str = Field(min_length=8, max_length=64)
+    path: str = Field(min_length=1, max_length=300)
+    referrer_host: str | None = Field(default=None, max_length=255)
+    language: str | None = Field(default=None, max_length=32)
+
+
 class GuestSessionRequest(BaseModel):
     display_name: str | None = Field(default=None, max_length=120)
 
