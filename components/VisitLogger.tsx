@@ -30,7 +30,6 @@ export function VisitLogger() {
   useEffect(() => {
     if (!API_URL || !pathname) return;
 
-    const controller = new AbortController();
     const payload = {
       visitor_id: getVisitorId(),
       path: pathname,
@@ -43,12 +42,10 @@ export function VisitLogger() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
       keepalive: true,
-      signal: controller.signal,
     }).catch(() => {
       // Analytics must never affect the learning experience.
     });
 
-    return () => controller.abort();
   }, [pathname]);
 
   return null;
