@@ -1,0 +1,58 @@
+name: Production Smoke Check
+
+on:
+  push:
+    branches:
+      - chore/production-smoke-check-20260908
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check public web routes
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://tractuslab.itspayam.com"
+          for path in / /account /author /learn /path /profile /scenarios; do
+            echo "GET $base$path"
+            code=$(curl --silent --show-error --location --output /tmp/body --write-out "%{http_code}" "$base$path")
+            test "$code" = "200" || { echo "Expected 200, got $code for $path"; cat /tmp/body; exit 1; }
+            test -s /tmp/body || { echo "Empty response body for $path"; exit 1; }
+          done
+
+      - name: Check API health and OpenAPI
+        shell: bash
+        run: |
+          set -euo pipefail
+          api="https://api-production-cacf5.up.railway.app"
+          test "$(curl --silent --show-error --output /tmp/health --write-out "%{http_code}" "$api/health")" = "200"
+          test "$(curl --silent --show-error --output /tmp/openapi --write-out "%{http_code}" "$api/openapi.json")" = "200"
+          grep -q '"/v1/analytics/visit"' /tmp/openapi
+          grep -q '"/v1/admin/analytics/visitors"' /tmp/openapi
+
+      - name: Check browser CORS for analytics
+        shell: bash
+        run: |
+          set -euo pipefail
+          api="https://api-production-cacf5.up.railway.app"
+          headers=$(curl --silent --show-error --dump-header - --output /dev/null \
+            -X OPTIONS "$api/v1/analytics/visit" \
+            -H "Origin: https://tractuslab.itspayam.com" \
+            -H "Access-Control-Request-Method: POST" \
+            -H "Access-Control-Request-Headers: content-type")
+          printf '%s\n' "$headers"
+          echo "$headers" | grep -qi '^access-control-allow-origin: https://tractuslab.itspayam.com'
+          echo "$headers" | grep -qi '^access-control-allow-methods:.*POST'
+
+      - name: Check admin analytics stays private
+        shell: bash
+        run: |
+          set -euo pipefail
+          api="https://api-production-cacf5.up.railway.app"
+          code=$(curl --silent --show-error --output /tmp/admin --write-out "%{http_code}" "$api/v1/admin/analytics/visitors")
+          case "$code" in
+            401|403) echo "Protected as expected: $code" ;;
+            *) echo "Expected 401/403, got $code"; cat /tmp/admin; exit 1 ;;
+          esac
