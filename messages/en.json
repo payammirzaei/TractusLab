@@ -5,6 +5,7 @@
     "language": "Language"
   },
   "nav": {
+    "journey": "Data Journey",
     "path": "Mission path",
     "pathShort": "Path",
     "scenarios": "Scenarios",
