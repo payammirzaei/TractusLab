@@ -529,6 +529,7 @@ export default function NeuralScene(props: SceneProps) {
     <div ref={host} className={styles.canvas} role="group" aria-label={`Conceptual Tractus-X journey. ${chapters[props.chapter].title}. Current step: ${frame.current.title}.`}>
       <WorldBadge side="left" title="Company A" role="Supplier · Provider" accent={COLORS.provider} active={providerActive} pressed={props.selected === "provider"} onClick={() => props.onSelect("provider")} />
       <WorldBadge side="right" title="Company B" role="Manufacturer · Consumer" accent={COLORS.consumer} active={consumerActive} pressed={props.selected === "consumer"} onClick={() => props.onSelect("consumer")} />
+      <span aria-hidden="true" style={{ display: "none" }} />
       <StoryRail scene={directed} chapter={props.chapter} />
       {directed.artifacts.map(item => {
         const owner = directorArtifactOwners[item.id];
