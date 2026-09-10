@@ -41,6 +41,10 @@ Primary references reviewed for the conceptual model:
 
 ## Implementation and performance
 
+### Visual clarity revision
+
+Canvas aspect ratio now determines company separation and camera fit. Catalogue/identity occupy separate upper positions; policy/agreement occupy separate lower positions. A fixed-height stage prevents a long guide from distorting framing. Networks use 42 evenly distributed satellites with unique nearest-neighbor edges instead of 105 randomly packed satellites and duplicate edges. Inactive details recede; labels reveal their role only when active, hovered or focused (compact labels on phones). Distinct chapter captions, one-shot confirmation ripples, an agreement orbit, and a payload wake make outcomes easier to recognize without adding continuous background effects. OS and manual reduced-motion controls suppress the new effects. Projection regression tests cover wide, desktop and phone canvas sizes; these are geometry checks, not browser visual QA.
+
 `lib/data-journey.ts` owns the deterministic reducer and content. `DataJourney.tsx` owns accessible controls and an independent learning clock. `NeuralScene.tsx` owns the imperative Three.js renderer. The renderer is dynamically imported only on this route; CSS modules isolate the dark experience from legacy global theme utilities.
 
 Geometry/materials are built once, reused between chapters and disposed on unmount. Neural points use batched geometry and instancing. Pixel ratio is capped at 1.6, drawing at 45 fps, and low-motion/paused drawing at 10 fps. Hidden pages do not render or advance. No third-party asset/CDN requests, audio autoplay, remote AI calls, or real data transfers occur. WebGL creation/context failures switch to an operable schematic with the same learning controls. OS reduced-motion preference is respected.
