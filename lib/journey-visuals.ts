@@ -2,7 +2,7 @@ import type { NodeId } from "./data-journey";
 
 /** Responsive coordinates for a two-company dataspace stage. */
 export function journeyLayout(aspect: number) {
-  const safeAspect = Number.isFinite(aspect) && aspect > 0 ? aspect : 1;
+  const safeAspect = Number.isFinite(aspect) && safeAspect > 0 ? aspect : 1;
   const compact = safeAspect < .9;
   const companyScale = compact ? .72 : safeAspect < 1.25 ? .86 : 1;
   // Keep the companies closer on desktop so the dataspace corridor reads as a relationship, not empty canvas.
@@ -21,8 +21,8 @@ export function journeyLayout(aspect: number) {
     agreement: [0, controlY, 1.05 * depth],
   };
   const halfWidth = companyX + 2.15 * companyScale;
-  // Preserve vertical safety on ultra-wide screens; visual enlargement is handled by the presentation layer too.
-  const halfHeight = 3.4;
+  // Reserve enough vertical margin for the presentation layer's desktop canvas enlargement as well as the raw camera projection.
+  const halfHeight = 3.8;
   const vertical = halfHeight / Math.tan(Math.PI / 9);
   const horizontal = halfWidth / (Math.tan(Math.PI / 9) * safeAspect);
   return { positions, distance: Math.max(vertical, horizontal) + 1.35, companyX, companyScale, controlY, dataY, topY, bottomY };
