@@ -1,0 +1,306 @@
+.scene {
+  position:absolute;
+  inset:164px 0 153px;
+  overflow:hidden;
+  isolation:isolate;
+}
+
+.scene canvas {
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  display:block;
+}
+
+.topologyHeader {
+  position:absolute;
+  z-index:30;
+  top:4px;
+  left:50%;
+  width:min(760px,68%);
+  transform:translateX(-50%);
+  display:grid;
+  justify-items:center;
+  gap:9px;
+  pointer-events:none;
+}
+
+.dataspaceTitle {
+  display:grid;
+  justify-items:center;
+  gap:1px;
+  padding:4px 12px;
+  border:1px solid rgba(121,215,255,.18);
+  border-radius:999px;
+  background:rgba(3,9,16,.78);
+  backdrop-filter:blur(8px);
+}
+
+.dataspaceTitle strong {
+  color:#dff5ff;
+  font-size:10px;
+  line-height:1.1;
+  letter-spacing:.16em;
+}
+
+.dataspaceTitle span {
+  color:#6f879c;
+  font-size:7.5px;
+  letter-spacing:.08em;
+}
+
+.rail {
+  --rail-accent:#63bfff;
+  width:min(500px,72%);
+  display:grid;
+  grid-auto-flow:column;
+  grid-auto-columns:1fr;
+}
+
+.railStep {
+  position:relative;
+  display:grid;
+  justify-items:center;
+  gap:3px;
+  color:#4c6175;
+}
+
+.railStep:not(:first-child)::before {
+  content:"";
+  position:absolute;
+  top:4px;
+  right:50%;
+  width:100%;
+  height:1px;
+  background:rgba(100,125,150,.14);
+}
+
+.railStep i {
+  position:relative;
+  z-index:1;
+  width:6px;
+  height:6px;
+  border:1px solid #405166;
+  border-radius:50%;
+  background:#07101b;
+}
+
+.railStep span {
+  font-size:7.5px;
+  font-weight:560;
+}
+
+.railStep[data-state="done"]::before,
+.railStep[data-state="active"]::before { background:color-mix(in srgb,var(--rail-accent) 55%,transparent); }
+.railStep[data-state="done"] i { border-color:var(--rail-accent); background:color-mix(in srgb,var(--rail-accent) 38%,#07101b); }
+.railStep[data-state="done"] span { color:#829aaf; }
+.railStep[data-state="active"] i { width:10px; height:10px; border-color:var(--rail-accent); background:var(--rail-accent); box-shadow:0 0 13px color-mix(in srgb,var(--rail-accent) 58%,transparent); }
+.railStep[data-state="active"] span { color:#edf7ff; font-weight:720; }
+
+.actorStrip {
+  position:absolute;
+  z-index:26;
+  top:62px;
+  left:50%;
+  width:min(1180px,94%);
+  transform:translateX(-50%);
+  display:grid;
+  grid-template-columns:.75fr 1.15fr 1.15fr .75fr;
+  align-items:start;
+  gap:18px;
+  pointer-events:none;
+}
+
+.actor {
+  justify-self:center;
+  display:grid;
+  justify-items:center;
+  text-align:center;
+  border-radius:11px;
+  background:rgba(4,10,18,.76);
+  backdrop-filter:blur(8px);
+  transition:opacity .18s,border-color .18s,box-shadow .18s;
+}
+
+.businessActor {
+  min-width:110px;
+  padding:6px 9px;
+  border:1px solid rgba(150,173,205,.18);
+  opacity:.45;
+}
+
+.businessActor[data-active="true"] { opacity:.9; }
+.businessActor strong { color:#e8f2fb; font-size:11px; }
+.businessActor span { margin-top:2px; color:#778da2; font-size:7.7px; }
+
+.edcActor {
+  width:min(190px,100%);
+  padding:8px 11px 9px;
+  border:1px solid rgba(121,215,255,.42);
+  box-shadow:0 10px 28px rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.02);
+  opacity:.72;
+}
+
+.edcActor[data-active="true"] {
+  opacity:1;
+  border-color:rgba(121,215,255,.82);
+  box-shadow:0 10px 32px rgba(0,0,0,.28),0 0 28px rgba(99,191,255,.1);
+}
+
+.edcActor > span {
+  color:#79d7ff;
+  font-size:8px;
+  font-weight:800;
+  letter-spacing:.14em;
+}
+
+.edcActor strong {
+  margin-top:2px;
+  color:#f1f8ff;
+  font-size:13px;
+  line-height:1.15;
+}
+
+.edcActor small {
+  margin-top:4px;
+  color:#8ca2b5;
+  font-size:7.6px;
+}
+
+.providerEdcHint,
+.consumerEdcHint {
+  position:absolute;
+  z-index:8;
+  top:46%;
+  transform:translate(-50%,-50%);
+  color:rgba(121,215,255,.58);
+  font-size:8px;
+  line-height:1.15;
+  text-align:center;
+  letter-spacing:.14em;
+  pointer-events:none;
+  text-shadow:0 0 14px rgba(99,191,255,.28);
+}
+
+.providerEdcHint { left:34%; }
+.consumerEdcHint { left:66%; }
+.providerEdcHint b,.consumerEdcHint b { font-size:16px; letter-spacing:.08em; color:rgba(214,242,255,.74); }
+
+.businessHintLeft,
+.businessHintRight {
+  position:absolute;
+  z-index:7;
+  top:47%;
+  color:rgba(130,151,169,.36);
+  font-size:7px;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  pointer-events:none;
+}
+.businessHintLeft { left:5%; }
+.businessHintRight { right:5%; }
+
+.heroCallout {
+  --hero-accent:#63bfff;
+  position:absolute;
+  z-index:25;
+  left:50%;
+  bottom:64px;
+  transform:translateX(-50%);
+  width:min(330px,44%);
+  padding:9px 12px 10px;
+  border:1px solid color-mix(in srgb,var(--hero-accent) 58%,transparent);
+  border-left:2px solid var(--hero-accent);
+  border-radius:10px;
+  background:rgba(3,10,18,.92);
+  box-shadow:0 10px 28px rgba(0,0,0,.34),0 0 22px color-mix(in srgb,var(--hero-accent) 8%,transparent);
+  backdrop-filter:blur(9px);
+  pointer-events:none;
+}
+
+.heroCallout strong {
+  display:block;
+  color:#eff8ff;
+  font-size:12px;
+  line-height:1.2;
+}
+
+.heroCallout span {
+  display:block;
+  margin-top:3px;
+  color:#8fa7ba;
+  font-size:8.3px;
+  line-height:1.4;
+}
+
+.planeLegend {
+  position:absolute;
+  z-index:24;
+  left:50%;
+  bottom:10px;
+  transform:translateX(-50%);
+  display:flex;
+  gap:7px;
+  pointer-events:none;
+}
+
+.planeLegend span {
+  padding:4px 7px;
+  border:1px solid rgba(99,191,255,.2);
+  border-radius:999px;
+  background:rgba(4,10,18,.8);
+  color:#53697c;
+  font-size:7.3px;
+  font-weight:720;
+  white-space:nowrap;
+}
+
+.planeLegend span:first-child[data-active="true"] { border-color:rgba(99,191,255,.65); color:#63bfff; }
+.planeLegend span:last-child[data-active="true"] { border-color:rgba(85,239,200,.65); color:#55efc8; }
+
+.payloadState {
+  position:absolute;
+  z-index:25;
+  right:12px;
+  bottom:42px;
+  padding:5px 8px;
+  border:1px solid rgba(96,117,138,.28);
+  border-radius:999px;
+  background:rgba(4,10,18,.84);
+  color:#71879c;
+  font-size:7.3px;
+  font-weight:760;
+  letter-spacing:.08em;
+  pointer-events:none;
+}
+.payloadState[data-state="moving"],.payloadState[data-state="done"] { border-color:rgba(85,239,200,.42); color:#55efc8; }
+
+/* The old readout used conceptual NodeIds and could display Company A → Company B
+   even when the actual teaching route is EDC → EDC. Titles now name the EDC actors,
+   so suppress that misleading legacy subline. */
+:global([aria-live="polite"][aria-atomic="true"] > small) { display:none !important; }
+
+@media(max-width:850px) {
+  .scene { inset:164px 0 153px; }
+  .actorStrip { width:96%; grid-template-columns:.65fr 1.15fr 1.15fr .65fr; gap:7px; }
+  .edcActor { padding:7px 6px; }
+  .edcActor strong { font-size:11px; }
+  .businessActor { min-width:84px; padding-inline:6px; }
+  .businessActor span { display:none; }
+  .heroCallout { width:min(300px,54%); }
+}
+
+@media(max-width:550px) {
+  .scene { inset:163px 0 169px; }
+  .topologyHeader { width:94%; }
+  .dataspaceTitle span { display:none; }
+  .actorStrip { top:54px; grid-template-columns:1fr 1fr; width:94%; gap:5px 8px; }
+  .businessActor { display:none; }
+  .edcActor { width:100%; }
+  .providerEdcHint,.consumerEdcHint,.businessHintLeft,.businessHintRight { display:none; }
+  .rail { width:92%; }
+  .heroCallout { bottom:58px; width:72%; padding:7px 9px; }
+  .planeLegend span { font-size:6.4px; padding:3px 5px; }
+  .payloadState { right:8px; bottom:35px; font-size:6.5px; }
+}
