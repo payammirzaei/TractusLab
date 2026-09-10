@@ -1,18 +1,26 @@
 import type { NodeId } from "./data-journey";
 
-/** Spread across the available canvas instead of keeping a tiny fixed central cluster. */
+/**
+ * Responsive 3D stage layout. The semantic graph still reads left-to-right,
+ * but important nodes occupy different depth planes so camera motion and
+ * parallax reveal real volume without making the learning path harder to read.
+ */
 export function journeyLayout(aspect: number) {
   const safeAspect = Number.isFinite(aspect) && aspect > 0 ? aspect : 1;
   const spread = Math.max(5, safeAspect * 4.4);
   const lane = Math.max(2.2, spread * .37);
+  const depth = safeAspect < .9 ? .45 : 1;
   const positions: Record<NodeId, [number, number, number]> = {
-    provider: [-spread, 0, 0], consumer: [spread, 0, 0],
-    catalog: [-lane, 2.8, 0], identity: [lane, 2.8, 0],
-    policy: [-lane, -2.4, 0], agreement: [lane, -2.4, 0],
+    provider: [-spread, 0, -.75 * depth],
+    consumer: [spread, 0, .75 * depth],
+    catalog: [-lane, 2.8, .9 * depth],
+    identity: [lane, 2.8, -.7 * depth],
+    policy: [-lane, -2.4, .45 * depth],
+    agreement: [lane, -2.4, 1.15 * depth],
   };
-  // Reserve space for neural halos, lower labels and path curvature.
-  const halfHeight = Math.max(4.6, (spread + 2.4) / safeAspect);
-  return { positions, distance: halfHeight / Math.tan(Math.PI / 9) + 1.2 };
+  // Reserve space for neural halos, lower labels, path curvature and camera pushes.
+  const halfHeight = Math.max(4.8, (spread + 2.5) / safeAspect);
+  return { positions, distance: halfHeight / Math.tan(Math.PI / 9) + 1.65 };
 }
 
 export const journeyMoments = [
