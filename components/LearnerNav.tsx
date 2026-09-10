@@ -4,12 +4,13 @@ import Link from "next/link";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useI18n } from "@/components/I18nProvider";
 
-export type LearnerNavSection = "home" | "path" | "scenarios" | "learn" | "profile" | "account" | "author";
+export type LearnerNavSection = "home" | "path" | "scenarios" | "learn" | "journey" | "profile" | "account" | "author";
 
 const items: Array<{ id: LearnerNavSection; href: string; labelKey: string; shortKey: string }> = [
   { id: "path", href: "/path", labelKey: "nav.path", shortKey: "nav.pathShort" },
   { id: "scenarios", href: "/scenarios", labelKey: "nav.scenarios", shortKey: "nav.scenariosShort" },
   { id: "learn", href: "/learn", labelKey: "nav.learn", shortKey: "nav.learnShort" },
+  { id: "journey", href: "/journey", labelKey: "nav.journey", shortKey: "nav.journey" },
   { id: "profile", href: "/profile", labelKey: "nav.profile", shortKey: "nav.profile" },
 ];
 
