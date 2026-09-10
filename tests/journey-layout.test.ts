@@ -4,7 +4,7 @@ import { PerspectiveCamera, Vector3 } from "three";
 import { journeyLayout, journeyMoments } from "../lib/journey-visuals.ts";
 import { chapters } from "../lib/data-journey.ts";
 
-test("two company architectures stay visible on wide, standard and phone canvases", () => {
+test("two company architectures stay visible and separated on wide, standard and phone canvases", () => {
   for (const [width, height] of [[2000, 450], [980, 420], [640, 350], [350, 287], [300, 287]]) {
     const layout = journeyLayout(width / height);
     const camera = new PerspectiveCamera(40, width / height, .1, 1000);
@@ -15,9 +15,9 @@ test("two company architectures stay visible on wide, standard and phone canvase
     const rightEdge = project(layout.companyX + shellHalf, 0, .2);
     assert.ok(leftEdge.x > -.98, `${width}px: Company A clipped`);
     assert.ok(rightEdge.x < .98, `${width}px: Company B clipped`);
-    const provider = project(-layout.companyX, 0, -.2);
-    const consumer = project(layout.companyX, 0, .2);
-    assert.ok(consumer.x - provider.x > .72, `${width}px: company stacks collapse into each other`);
+    const providerInner = project(-layout.companyX + shellHalf, 0, -.2).x;
+    const consumerInner = project(layout.companyX - shellHalf, 0, .2).x;
+    assert.ok(consumerInner - providerInner > .035, `${width}px: company shells overlap or leave no readable dataspace corridor`);
     const top = project(0, 3.55 * layout.companyScale, 0);
     const bottom = project(0, -3.05 * layout.companyScale, 0);
     assert.ok(top.y < .94 && bottom.y > -.94, `${width}px: company architecture vertically clipped`);
