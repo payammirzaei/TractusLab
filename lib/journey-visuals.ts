@@ -5,7 +5,8 @@ export function journeyLayout(aspect: number) {
   const safeAspect = Number.isFinite(aspect) && aspect > 0 ? aspect : 1;
   const compact = safeAspect < .9;
   const companyScale = compact ? .72 : safeAspect < 1.25 ? .86 : 1;
-  const companyX = compact ? 3.35 : Math.min(5.7, Math.max(4.45, safeAspect * 3.15));
+  // Keep the companies closer on desktop so the dataspace corridor reads as a relationship, not empty canvas.
+  const companyX = compact ? 3.35 : Math.min(5.25, Math.max(4.3, safeAspect * 2.95));
   const depth = compact ? .42 : safeAspect < 1.25 ? .72 : 1;
   const controlY = .75;
   const dataY = -1.05;
@@ -20,7 +21,8 @@ export function journeyLayout(aspect: number) {
     agreement: [0, controlY, 1.05 * depth],
   };
   const halfWidth = companyX + 2.15 * companyScale;
-  const halfHeight = 3.75;
+  // Reserve enough vertical margin for the presentation layer's desktop canvas enlargement as well as the raw camera projection.
+  const halfHeight = 3.8;
   const vertical = halfHeight / Math.tan(Math.PI / 9);
   const horizontal = halfWidth / (Math.tan(Math.PI / 9) * safeAspect);
   return { positions, distance: Math.max(vertical, horizontal) + 1.35, companyX, companyScale, controlY, dataY, topY, bottomY };

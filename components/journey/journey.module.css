@@ -202,3 +202,76 @@
   .signalReadout small { font-size:.7rem; }
   .simpleScene { padding-top:165px; }
 }
+
+/* Visual hierarchy pass: one primary action, then sequence, then spatial artifacts. */
+.signalReadout { z-index:6; background:linear-gradient(100deg,rgba(20,38,59,.98),rgba(11,22,37,.96)); border-color:#8aa9d238; box-shadow:0 14px 42px #00000038,inset 0 1px 0 rgba(255,255,255,.025); }
+.signalReadout strong { font-size:clamp(1rem,1.55vw,1.24rem); font-weight:580; }
+.signalReadout small { color:#bfd0e3; }
+
+/* NeuralScene's first two buttons are the company badges; the following div is the duplicate in-scene action card. */
+.canvas > button:nth-of-type(2) + div { display:none !important; }
+
+/* Keep the chapter rail immediately below the primary readout instead of underneath another action card. */
+.canvas > div[aria-hidden="true"] { top:10px !important; width:min(590px,54vw) !important; }
+
+/* Give the WebGL story more physical presence on desktop without touching protocol timing. */
+@media(min-width:851px) {
+  .canvas canvas { transform:scale(1.12); transform-origin:50% 52%; }
+}
+
+/* Semantic cards are supporting artifacts, not tiny dashboard widgets. */
+.canvas > [style*="236px"] { width:min(272px,27vw) !important; padding:12px 14px !important; gap:9px !important; border-radius:13px !important; }
+.canvas > [style*="236px"] > div:first-child > div:first-child { font-size:9px !important; }
+.canvas > [style*="236px"] > div:first-child > div:last-child { font-size:clamp(14px,1.15vw,17px) !important; line-height:1.22 !important; }
+.canvas > [style*="236px"] > div:nth-child(2) { gap:6px !important; }
+.canvas > [style*="236px"] > div:nth-child(2) > div > span:first-child { font-size:9.5px !important; }
+.canvas > [style*="236px"] > div:nth-child(2) > div > span:last-child { font-size:10px !important; }
+
+/* Pull detached right-side cards toward Company B. */
+.canvas > [style*="right: 8%"] { right:13% !important; }
+.canvas > [style*="right: 9%"] { right:14% !important; }
+
+/* Source cards sit near Company A instead of living in a remote corner. */
+.canvas > [style*="bottom: 62px"] { left:clamp(26px,13vw,190px) !important; bottom:34px !important; }
+
+/* Let the golden agreement stay visually central; its explanatory card sits below it. */
+.canvas > [style*="top: 57%"] { top:68% !important; }
+
+/* Payload state is a fixed status, not another object in the spatial narrative. */
+.canvas > div[style*="bottom: 15px"][style*="border-radius: 999px"] { left:auto !important; right:18px !important; bottom:16px !important; transform:none !important; padding:6px 11px !important; background:rgba(5,13,23,.94) !important; }
+
+/* Transfer lanes should read as two distinct highways at a glance. */
+.canvas > div[style*="top: 45%"],
+.canvas > div[style*="top: 64%"] {
+  width:min(640px,48vw) !important;
+  min-height:26px;
+  padding:6px 16px !important;
+  border-top:1px solid currentColor;
+  border-bottom:1px solid rgba(148,177,205,.08);
+  border-radius:999px;
+  background:linear-gradient(90deg,transparent,rgba(8,18,31,.74) 18%,rgba(8,18,31,.9) 50%,rgba(8,18,31,.74) 82%,transparent);
+  box-shadow:0 8px 24px rgba(0,0,0,.16);
+  font-size:9.5px !important;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.legend { opacity:.72; }
+
+@media(max-width:850px) {
+  .canvas > button:nth-of-type(2) + div { display:none !important; }
+  .canvas > div[aria-hidden="true"] { top:8px !important; width:min(520px,78vw) !important; }
+  .canvas > [style*="236px"] { width:min(248px,38vw) !important; }
+  .canvas > [style*="right: 8%"],.canvas > [style*="right: 9%"] { right:5% !important; }
+  .canvas > div[style*="top: 45%"],.canvas > div[style*="top: 64%"] { width:58vw !important; }
+}
+
+@media(max-width:550px) {
+  .canvas > div[aria-hidden="true"] { width:86vw !important; top:4px !important; }
+  .canvas > [style*="236px"] { width:min(218px,64vw) !important; padding:9px 10px !important; }
+  .canvas > [style*="236px"] > div:first-child > div:last-child { font-size:13px !important; }
+  .canvas > [style*="right: 8%"],.canvas > [style*="right: 9%"] { right:3% !important; }
+  .canvas > div[style*="bottom: 15px"][style*="border-radius: 999px"] { right:10px !important; bottom:8px !important; }
+  .canvas > div[style*="top: 45%"],.canvas > div[style*="top: 64%"] { width:66vw !important; min-height:22px; padding:4px 10px !important; font-size:8px !important; }
+}
