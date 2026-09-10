@@ -22,6 +22,17 @@ export type SceneProps = {
   onSelect: (id: NodeId) => void;
 };
 
+type OverlayId = NodeId | "source" | "edr" | "payload" | "message";
+type OverlaySpec = {
+  id: OverlayId;
+  title: string;
+  subtitle: string;
+  color: string;
+  visible: boolean;
+  active: boolean;
+  nodeId?: NodeId;
+};
+
 const providerColor = "#59edcf";
 const consumerColor = "#aaa4ff";
 const controlColor = "#80caff";
@@ -40,8 +51,39 @@ function seeded(seed: number) {
   };
 }
 
+function overlayStyle(spec: OverlaySpec): React.CSSProperties {
+  return {
+    position: "absolute",
+    zIndex: spec.active ? 8 : 6,
+    transform: "translate(-50%, -50%)",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 2,
+    minWidth: spec.active ? 118 : 92,
+    maxWidth: "min(220px, 40vw)",
+    padding: spec.active ? "7px 11px" : "5px 9px",
+    borderRadius: 10,
+    border: `1px solid ${spec.color}${spec.active ? "aa" : "55"}`,
+    background: spec.active ? "rgba(7, 15, 28, .94)" : "rgba(5, 12, 22, .78)",
+    boxShadow: spec.active ? `0 0 28px ${spec.color}22, inset 0 1px 0 rgba(255,255,255,.05)` : "inset 0 1px 0 rgba(255,255,255,.03)",
+    backdropFilter: "blur(10px)",
+    color: spec.active ? "#f4f8ff" : "#d6e1ef",
+    opacity: spec.visible ? 1 : 0,
+    visibility: spec.visible ? "visible" : "hidden",
+    pointerEvents: spec.visible && spec.nodeId ? "auto" : "none",
+    transition: "opacity .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease",
+    cursor: spec.nodeId ? "pointer" : "default",
+    font: "inherit",
+    lineHeight: 1.15,
+    textAlign: "center",
+    whiteSpace: "nowrap",
+  };
+}
+
 export default function NeuralScene(props: SceneProps) {
   const host = useRef<HTMLDivElement>(null);
+  const overlays = useRef<Partial<Record<OverlayId, HTMLElement | null>>>({});
   const live = useRef(props);
   live.current = props;
   const [unavailable, setUnavailable] = useState(false);
@@ -96,6 +138,7 @@ export default function NeuralScene(props: SceneProps) {
       opacity,
       depthWrite: opacity > .35,
     }));
+
     const lineMat = (color: THREE.ColorRepresentation, opacity = .2) => material(new THREE.LineBasicMaterial({
       color,
       transparent: true,
@@ -103,6 +146,7 @@ export default function NeuralScene(props: SceneProps) {
       depthWrite: false,
       blending: THREE.AdditiveBlending,
     }));
+
     const glowPoints = (color: string, size: number, positions: number[]) => {
       const g = geometry(new THREE.BufferGeometry());
       g.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
@@ -163,14 +207,10 @@ export default function NeuralScene(props: SceneProps) {
       hitMeshes.push(core);
       group.add(core);
 
-      const shellMaterial = material(new THREE.MeshBasicMaterial({
-        color,
-        wireframe: true,
-        transparent: true,
-        opacity: .11,
-        depthWrite: false,
-      }));
-      const shell = new THREE.Mesh(geometry(new THREE.IcosahedronGeometry(1.58, 2)), shellMaterial);
+      const shell = new THREE.Mesh(
+        geometry(new THREE.IcosahedronGeometry(1.58, 2)),
+        material(new THREE.MeshBasicMaterial({ color, wireframe: true, transparent: true, opacity: .11, depthWrite: false })),
+      );
       group.add(shell);
 
       const halo = glowPoints(color, 15, [0, 0, 0]);
@@ -213,8 +253,7 @@ export default function NeuralScene(props: SceneProps) {
       });
       const edgeGeometry = geometry(new THREE.BufferGeometry());
       edgeGeometry.setAttribute("position", new THREE.Float32BufferAttribute(edgeData, 3));
-      const networkMaterial = lineMat(color, .18);
-      const network = new THREE.LineSegments(edgeGeometry, networkMaterial);
+      const network = new THREE.LineSegments(edgeGeometry, lineMat(color, .18));
       group.add(network);
 
       const nodePoints = glowPoints(color, 2.5, pts.flatMap(point => point.toArray()));
@@ -229,14 +268,14 @@ export default function NeuralScene(props: SceneProps) {
     const consumerWorld = createWorld("consumer", consumerColor, 133);
 
     type Glyph = {
-      id: NodeId;
+      id: Exclude<NodeId, "provider" | "consumer">;
       group: THREE.Group;
       core: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
       rings: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>[];
       halo: THREE.Points<THREE.BufferGeometry, THREE.ShaderMaterial>;
     };
 
-    function createGlyph(id: Exclude<NodeId, "provider" | "consumer">, shape: THREE.BufferGeometry) {
+    function createGlyph(id: Glyph["id"], shape: THREE.BufferGeometry): Glyph {
       const color = journeyNodes[id].color;
       const group = new THREE.Group();
       const core = new THREE.Mesh(geometry(shape), pbr(color, .35));
@@ -256,7 +295,7 @@ export default function NeuralScene(props: SceneProps) {
         return ring;
       });
       scene.add(group);
-      return { id, group, core, rings, halo } as Glyph;
+      return { id, group, core, rings, halo };
     }
 
     const glyphs: Glyph[] = [
@@ -341,10 +380,10 @@ export default function NeuralScene(props: SceneProps) {
     scene.add(agreementGroup);
 
     const fragments = Array.from({ length: 8 }, (_, i) => {
-      const mesh = new THREE.Mesh(geometry(new THREE.TetrahedronGeometry(.15)), pbr(contractColor, 1.2));
-      mesh.userData.phase = i * Math.PI * 2 / 8;
-      scene.add(mesh);
-      return mesh;
+      const fragment = new THREE.Mesh(geometry(new THREE.TetrahedronGeometry(.15)), pbr(contractColor, 1.2));
+      fragment.userData.phase = i * Math.PI * 2 / 8;
+      scene.add(fragment);
+      return fragment;
     });
 
     const edr = new THREE.Group();
@@ -454,8 +493,23 @@ export default function NeuralScene(props: SceneProps) {
     element.addEventListener("pointerdown", onPointerDown);
 
     const point = new THREE.Vector3();
+    const projected = new THREE.Vector3();
+    const labelPoint = new THREE.Vector3();
     const signalColor = new THREE.Color();
     const faultColor = new THREE.Color("#ff7185");
+
+    function projectOverlay(id: OverlayId, world: THREE.Vector3, offsetY = 0) {
+      const label = overlays.current[id];
+      if (!label) return;
+      projected.copy(world).project(camera);
+      const marginX = Math.min(96, Math.max(56, width * .07));
+      const marginY = 34;
+      const x = THREE.MathUtils.clamp((projected.x * .5 + .5) * width, marginX, width - marginX);
+      const y = THREE.MathUtils.clamp((-projected.y * .5 + .5) * height + offsetY, marginY, height - marginY);
+      label.style.left = `${x}px`;
+      label.style.top = `${y}px`;
+    }
+
     let raf = 0;
     let lastRender = 0;
     let disposed = false;
@@ -514,7 +568,16 @@ export default function NeuralScene(props: SceneProps) {
         });
       });
 
+      const glyphRelevant = (id: Glyph["id"]) => {
+        if (id === "catalog") return p.chapter === 1 || p.chapter === 3 || p.chapter === 4;
+        if (id === "identity") return p.chapter === 3;
+        if (id === "policy") return p.chapter === 1 || p.chapter === 4 || p.chapter === 5;
+        return false;
+      };
+
       glyphs.forEach(glyph => {
+        glyph.group.visible = glyphRelevant(glyph.id);
+        if (!glyph.group.visible) return;
         const active = glyph.id === focusId;
         const blocked = sequence.blocked && glyph.id === current.focus;
         const color = blocked ? faultColor : new THREE.Color(journeyNodes[glyph.id].color);
@@ -540,10 +603,10 @@ export default function NeuralScene(props: SceneProps) {
         ring.rotation.z = t * (.22 + i * .08) * (i ? -1 : 1);
         ring.scale.setScalar(1 + Math.sin(t * 1.5 + i) * .05);
       });
-
       const processingLocal = current.kind === "local" && current.status === "active";
       focusRing.scale.setScalar(processingLocal ? .88 + Math.sin(t * 2.1) * .08 : 1);
 
+      let activePath: Path | undefined;
       paths.forEach(item => {
         const beat = item.chapter === p.chapter ? sequence.beats.find(candidate => candidate.id === item.beat.id) : undefined;
         const active = beat?.status === "active";
@@ -555,6 +618,7 @@ export default function NeuralScene(props: SceneProps) {
         const custom = item.beat.id === "transfer-start" || item.beat.id === "payload";
         item.token.visible = !!(active && !custom);
         item.trail.visible = !!(active && !custom && !p.reduced);
+        if (active) activePath = item;
         if (active && !custom) {
           item.curve.getPoint(smooth(fraction), item.token.position);
           item.token.rotation.set(t * .3, t * .5, t * .22);
@@ -572,6 +636,7 @@ export default function NeuralScene(props: SceneProps) {
       const sourceActive = p.chapter === 0 || current.id === "read-source" || current.id === "payload";
       sourceCore.material.emissiveIntensity = sourceActive ? 1.8 : .6;
       source.scale.setScalar(p.chapter === 0 ? .8 + smooth(sequence.position) * .25 : 1);
+      source.visible = p.chapter === 0 || p.chapter === 1 || p.chapter === 6 || p.chapter === 7;
 
       const finalized = sequence.beats.find(beat => beat.id === "contract-finalized");
       const sealBeat = sequence.beats.find(beat => beat.id === "seal");
@@ -628,6 +693,23 @@ export default function NeuralScene(props: SceneProps) {
         attr.needsUpdate = true;
       }
 
+      projectOverlay("provider", labelPoint.copy(vec("provider")).add(new THREE.Vector3(0, 1.92, .2)), -2);
+      projectOverlay("consumer", labelPoint.copy(vec("consumer")).add(new THREE.Vector3(0, 1.92, .2)), -2);
+      projectOverlay("source", labelPoint.copy(source.position).add(new THREE.Vector3(0, -.58, .12)), 0);
+      projectOverlay("catalog", labelPoint.copy(vec("catalog")).add(new THREE.Vector3(0, .58, .12)), -2);
+      projectOverlay("identity", labelPoint.copy(vec("identity")).add(new THREE.Vector3(0, .58, .12)), -2);
+      projectOverlay("policy", labelPoint.copy(vec("policy")).add(new THREE.Vector3(0, .62, .12)), -2);
+      projectOverlay("agreement", labelPoint.copy(agreementGroup.position).add(new THREE.Vector3(0, .72, .12)), -2);
+      projectOverlay("edr", labelPoint.copy(edr.position).add(new THREE.Vector3(0, .48, .12)), -2);
+      projectOverlay("payload", labelPoint.copy(payload.position).add(new THREE.Vector3(0, .55, .12)), -2);
+      if (activePath && activePath.token.visible) {
+        projectOverlay("message", labelPoint.copy(activePath.token.position).add(new THREE.Vector3(0, .45, .1)), -4);
+      } else if (current.id === "transfer-start" && edr.visible) {
+        projectOverlay("message", labelPoint.copy(edr.position).add(new THREE.Vector3(0, .7, .1)), -4);
+      } else if (current.id === "payload" && payload.visible) {
+        projectOverlay("message", labelPoint.copy(payload.position).add(new THREE.Vector3(0, .78, .1)), -4);
+      }
+
       dust.rotation.y = t * .004;
       if (!mobile && !p.reduced) composer.render();
       else renderer.render(scene, camera);
@@ -664,26 +746,50 @@ export default function NeuralScene(props: SceneProps) {
 
   const sequence = sequenceFrame(props.chapter, props.progress, props.fault);
   const focus = props.selected ?? sequence.current.focus;
+  const current = sequence.current;
+  const movingMessage = !!current.from && !!current.to;
+  const catalogTitle = props.chapter === 3 && sequence.catalogReady ? "Visible offer" : "Data offer";
+  const agreementVisible = props.chapter > 5 || sequence.agreementReady || (props.chapter === 5 && current.id === "contract-finalized");
+  const edrVisible = props.chapter > 6 || sequence.edrReady || (props.chapter === 6 && current.id === "transfer-start");
+
+  const specs: OverlaySpec[] = [
+    { id: "provider", title: "Company A", subtitle: "Supplier · Provider", color: providerColor, visible: true, active: focus === "provider", nodeId: "provider" },
+    { id: "consumer", title: "Company B", subtitle: "Manufacturer · Consumer", color: consumerColor, visible: true, active: focus === "consumer", nodeId: "consumer" },
+    { id: "source", title: "Private source", subtitle: "Original stays at Company A", color: dataColor, visible: [0, 1, 6, 7].includes(props.chapter), active: props.chapter === 0 || current.id === "read-source" || current.id === "payload" },
+    { id: "catalog", title: catalogTitle, subtitle: props.chapter === 3 ? "Requester-visible catalogue offer" : "Provider offer configuration", color: controlColor, visible: props.chapter === 1 || props.chapter === 3 || props.chapter === 4, active: focus === "catalog", nodeId: "catalog" },
+    { id: "identity", title: "Trust check", subtitle: "VC + access policy", color: journeyNodes.identity.color, visible: props.chapter === 3, active: focus === "identity" || props.fault === "identity", nodeId: "identity" },
+    { id: "policy", title: "Usage terms", subtitle: props.chapter === 5 ? "Provider evaluates contract policy" : "Contract policy", color: journeyNodes.policy.color, visible: props.chapter === 1 || props.chapter === 4 || props.chapter === 5, active: focus === "policy" || props.fault === "policy", nodeId: "policy" },
+    { id: "agreement", title: sequence.agreementReady ? "Finalized agreement" : "Agreement", subtitle: "Control plane · contract", color: contractColor, visible: agreementVisible, active: focus === "agreement" || current.id === "contract-finalized" || current.id === "seal", nodeId: "agreement" },
+    { id: "edr", title: "EDR", subtitle: "Endpoint + authorization", color: controlColor, visible: edrVisible, active: current.id === "transfer-start" || current.id === "edr-ready" },
+    { id: "payload", title: sequence.copyDelivered ? "Received copy" : "Actual payload", subtitle: "Battery-footprint record", color: dataColor, visible: sequence.copyVisible, active: current.id === "payload" || props.chapter === 7 },
+    { id: "message", title: current.title, subtitle: current.from && current.to ? `${journeyNodes[current.from].label} → ${journeyNodes[current.to].label}` : "", color: props.chapter === 5 ? contractColor : signalStyles[current.kind].color, visible: movingMessage && (current.status === "active" || current.status === "blocked"), active: true },
+  ];
+
   return (
-    <div ref={host} className={styles.canvas} role="group" aria-label="Cinematic conceptual Tractus-X dataspace with two independent company worlds and governed exchanges between them.">
-      <button
-        className={styles.nodeLabel}
-        data-active={focus === "provider"}
-        style={{ left: "18%", top: "10%", "--node-color": providerColor } as React.CSSProperties}
-        onClick={() => props.onSelect("provider")}
-        aria-pressed={props.selected === "provider"}
-      >
-        <span>Company A</span><small>Supplier · Provider</small>
-      </button>
-      <button
-        className={styles.nodeLabel}
-        data-active={focus === "consumer"}
-        style={{ left: "82%", top: "10%", "--node-color": consumerColor } as React.CSSProperties}
-        onClick={() => props.onSelect("consumer")}
-        aria-pressed={props.selected === "consumer"}
-      >
-        <span>Company B</span><small>Manufacturer · Consumer</small>
-      </button>
+    <div ref={host} className={styles.canvas} role="group" aria-label="Cinematic conceptual Tractus-X dataspace with clearly labelled company worlds, semantic objects and protocol messages.">
+      {specs.map(spec => {
+        const content = <>
+          <span style={{ fontSize: spec.active ? "clamp(11px,1vw,13px)" : "clamp(10px,.9vw,12px)", fontWeight: 650, letterSpacing: ".01em" }}>{spec.title}</span>
+          <small style={{ fontSize: "clamp(8px,.72vw,10px)", color: spec.color, opacity: .82 }}>{spec.subtitle}</small>
+        </>;
+        if (spec.nodeId) {
+          return <button
+            key={spec.id}
+            ref={el => { overlays.current[spec.id] = el; }}
+            type="button"
+            style={overlayStyle(spec)}
+            onClick={() => props.onSelect(spec.nodeId!)}
+            aria-pressed={props.selected === spec.nodeId}
+            tabIndex={spec.visible ? 0 : -1}
+          >{content}</button>;
+        }
+        return <div
+          key={spec.id}
+          ref={el => { overlays.current[spec.id] = el; }}
+          style={overlayStyle(spec)}
+          aria-hidden={!spec.visible}
+        >{content}</div>;
+      })}
     </div>
   );
 }
@@ -734,12 +840,15 @@ export function SimpleScene({ chapter, progress, fault, selected, onSelect }: Sc
         return <g key={id} opacity={active ? 1 : .36}>
           <circle cx={x} cy={y} r={active ? 23 : 17} fill="#0b1724" stroke={journeyNodes[id].color}/>
           <circle cx={x} cy={y} r="6" fill={journeyNodes[id].color}/>
+          <text x={x} y={y - 30} fill="#dbe8f7" textAnchor="middle" fontSize="11">{journeyNodes[id].label}</text>
         </g>;
       })}
       <path d="M110 205 l9 9 -9 9 -9 -9 Z" fill={dataColor}/>
-      {sequence.agreementReady && <path d="M360 258 l22 22 -22 22 -22 -22 Z" fill="none" stroke={contractColor} strokeWidth="3"/>}
-      {sequence.edrReady && <circle cx="545" cy="135" r="11" fill="none" stroke={controlColor} strokeWidth="4"/>}
-      {sequence.copyVisible && <path transform={`translate(${sequence.copyDelivered ? 610 : 360} 214)`} d="M0 -10 l10 10 -10 10 -10 -10 Z" fill={dataColor}/>} 
+      <text x="110" y="238" fill={dataColor} textAnchor="middle" fontSize="10">Private source</text>
+      {sequence.agreementReady && <><path d="M360 258 l22 22 -22 22 -22 -22 Z" fill="none" stroke={contractColor} strokeWidth="3"/><text x="360" y="330" fill={contractColor} textAnchor="middle" fontSize="10">Finalized agreement</text></>}
+      {sequence.edrReady && <><circle cx="545" cy="135" r="11" fill="none" stroke={controlColor} strokeWidth="4"/><text x="545" y="112" fill={controlColor} textAnchor="middle" fontSize="10">EDR</text></>}
+      {sequence.copyVisible && <><path transform={`translate(${sequence.copyDelivered ? 610 : 360} 214)`} d="M0 -10 l10 10 -10 10 -10 -10 Z" fill={dataColor}/><text x={sequence.copyDelivered ? 610 : 360} y="242" fill={dataColor} textAnchor="middle" fontSize="10">{sequence.copyDelivered ? "Received copy" : "Actual payload"}</text></>}
+      {sequence.current.from && sequence.current.to && <text x="360" y="34" fill={chapter === 5 ? contractColor : signalStyles[sequence.current.kind].color} textAnchor="middle" fontSize="12">{sequence.current.title}</text>}
     </svg>
     <div className={styles.simpleNodes}>
       {(Object.keys(journeyNodes) as NodeId[]).map(id => <button key={id} onClick={() => onSelect(id)} aria-pressed={selected === id}>{journeyNodes[id].label}</button>)}
