@@ -12,362 +12,737 @@ import { journeyLayout } from "@/lib/journey-visuals";
 import { journeySequences, sequenceFrame, signalStyles, type JourneyBeat, type SignalKind } from "@/lib/journey-sequence";
 import styles from "./journey.module.css";
 
-export type SceneProps = { chapter: number; progress: number; fault: Fault | null; paused: boolean; reduced: boolean; selected: NodeId | null; onSelect: (id: NodeId) => void };
-const nodeIds = Object.keys(journeyNodes) as NodeId[];
+export type SceneProps = {
+  chapter: number;
+  progress: number;
+  fault: Fault | null;
+  paused: boolean;
+  reduced: boolean;
+  selected: NodeId | null;
+  onSelect: (id: NodeId) => void;
+};
+
 const providerColor = "#59edcf";
 const consumerColor = "#aaa4ff";
 const controlColor = "#80caff";
 const contractColor = "#f5d786";
-const dataColor = "#59edb2";
-const smooth = (n: number) => { const v = THREE.MathUtils.clamp(n, 0, 1); return v * v * (3 - 2 * v); };
+const dataColor = "#59edcf";
+const smooth = (value: number) => {
+  const n = THREE.MathUtils.clamp(value, 0, 1);
+  return n * n * (3 - 2 * n);
+};
 
-function roundedShape(width: number, height: number, radius: number) {
-  const x = -width / 2, y = -height / 2, r = Math.min(radius, width / 2, height / 2);
-  const shape = new THREE.Shape();
-  shape.moveTo(x + r, y); shape.lineTo(x + width - r, y); shape.quadraticCurveTo(x + width, y, x + width, y + r);
-  shape.lineTo(x + width, y + height - r); shape.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
-  shape.lineTo(x + r, y + height); shape.quadraticCurveTo(x, y + height, x, y + height - r);
-  shape.lineTo(x, y + r); shape.quadraticCurveTo(x, y, x + r, y);
-  return shape;
+function seeded(seed: number) {
+  let value = seed >>> 0;
+  return () => {
+    value = (value * 1664525 + 1013904223) >>> 0;
+    return value / 4294967296;
+  };
 }
 
 export default function NeuralScene(props: SceneProps) {
   const host = useRef<HTMLDivElement>(null);
-  const labels = useRef<Partial<Record<NodeId, HTMLButtonElement | null>>>({});
-  const live = useRef(props); live.current = props;
+  const live = useRef(props);
+  live.current = props;
   const [unavailable, setUnavailable] = useState(false);
 
   useEffect(() => {
     const element = host.current;
     if (!element) return;
-    let renderer: THREE.WebGLRenderer;
-    try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "low-power" }); }
-    catch { setUnavailable(true); return; }
 
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, window.innerWidth < 720 ? 1.2 : 1.55));
-    renderer.setClearColor(0x050b14, 0);
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+    } catch {
+      setUnavailable(true);
+      return;
+    }
+
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, window.innerWidth < 720 ? 1.15 : 1.5));
+    renderer.setClearColor(0x050a12, 0);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.05;
+    renderer.toneMappingExposure = 1.22;
     renderer.domElement.setAttribute("aria-hidden", "true");
     element.prepend(renderer.domElement);
 
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x050b14, .012);
+    scene.fog = new THREE.FogExp2(0x050a12, .014);
+
+    let width = 1;
+    let height = 1;
     let layout = journeyLayout(1);
-    let width = 1, height = 1;
+    const vec = (id: NodeId) => new THREE.Vector3(...layout.positions[id]);
+
     const camera = new THREE.PerspectiveCamera(40, 1, .1, 100);
-    const targetCamera = new THREE.Vector3();
+    camera.position.set(0, .1, layout.distance);
+    const cameraTarget = camera.position.clone();
     const lookAt = new THREE.Vector3();
-    const targetLookAt = new THREE.Vector3();
+    const lookTarget = new THREE.Vector3();
     const pointer = new THREE.Vector2();
 
     const geometries = new Set<THREE.BufferGeometry>();
     const materials = new Set<THREE.Material>();
-    const textures = new Set<THREE.Texture>();
-    const geometry = <T extends THREE.BufferGeometry>(value: T) => { geometries.add(value); return value; };
-    const material = <T extends THREE.Material>(value: T) => { materials.add(value); return value; };
-    const rounded = (w: number, h: number, r = .12, depth = .1) => {
-      const g = geometry(new THREE.ExtrudeGeometry(roundedShape(w, h, r), { depth, bevelEnabled: true, bevelSegments: 2, bevelSize: .025, bevelThickness: .025, steps: 1 }));
-      g.translate(0, 0, -depth / 2); return g;
-    };
-    const surface = (accent: string, opacity = .96) => material(new THREE.MeshPhysicalMaterial({
-      color: "#09131f", emissive: accent, emissiveIntensity: .035, roughness: .38, metalness: .28,
-      clearcoat: .2, clearcoatRoughness: .45, transparent: opacity < 1, opacity,
-    }));
-    const hero = (color: string, intensity = .8) => material(new THREE.MeshStandardMaterial({
-      color: new THREE.Color(color).multiplyScalar(.42), emissive: color, emissiveIntensity: intensity,
-      roughness: .22, metalness: .55, transparent: true, opacity: 1,
-    }));
-    const lineMaterial = (color: string, opacity = .18) => material(new THREE.LineBasicMaterial({ color, transparent: true, opacity, depthWrite: false }));
+    const geometry = <T extends THREE.BufferGeometry>(g: T) => { geometries.add(g); return g; };
+    const material = <T extends THREE.Material>(m: T) => { materials.add(m); return m; };
 
-    function textSprite(title: string, subtitle: string, color: string, scale = 1) {
-      const canvas = document.createElement("canvas"); canvas.width = 1024; canvas.height = 256;
-      const ctx = canvas.getContext("2d")!; ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.textAlign = "center"; ctx.textBaseline = "middle";
-      ctx.font = "600 46px Inter, ui-sans-serif, system-ui, sans-serif"; ctx.fillStyle = "#eef6ff"; ctx.fillText(title, 512, 96);
-      ctx.font = "500 27px Inter, ui-sans-serif, system-ui, sans-serif"; ctx.fillStyle = color; ctx.fillText(subtitle, 512, 158);
-      const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace; texture.minFilter = THREE.LinearFilter; textures.add(texture);
-      const sprite = new THREE.Sprite(material(new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false, depthWrite: false })));
-      sprite.scale.set(3.15 * scale, .79 * scale, 1); sprite.renderOrder = 10; return sprite;
-    }
+    const pbr = (color: THREE.ColorRepresentation, emissive = .18, opacity = 1) => material(new THREE.MeshStandardMaterial({
+      color,
+      emissive: color,
+      emissiveIntensity: emissive,
+      roughness: .28,
+      metalness: .5,
+      transparent: opacity < 1,
+      opacity,
+      depthWrite: opacity > .35,
+    }));
+    const lineMat = (color: THREE.ColorRepresentation, opacity = .2) => material(new THREE.LineBasicMaterial({
+      color,
+      transparent: true,
+      opacity,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    }));
+    const glowPoints = (color: string, size: number, positions: number[]) => {
+      const g = geometry(new THREE.BufferGeometry());
+      g.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+      const m = material(new THREE.ShaderMaterial({
+        uniforms: {
+          tint: { value: new THREE.Color(color) },
+          size: { value: size },
+          opacity: { value: 1 },
+          energy: { value: 1 },
+        },
+        vertexShader: "uniform float size; void main(){vec4 p=modelViewMatrix*vec4(position,1.0);gl_PointSize=min(90.0,size*160.0/-p.z);gl_Position=projectionMatrix*p;}",
+        fragmentShader: "uniform vec3 tint;uniform float opacity;uniform float energy;void main(){float d=length(gl_PointCoord-vec2(.5))*2.;if(d>1.)discard;float a=pow(1.-d,3.2);gl_FragColor=vec4(tint*energy,a*opacity);}",
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      }));
+      return new THREE.Points<THREE.BufferGeometry, THREE.ShaderMaterial>(g, m);
+    };
 
     const pmrem = new THREE.PMREMGenerator(renderer);
-    const environment = pmrem.fromScene(new RoomEnvironment(), .05); pmrem.dispose(); scene.environment = environment.texture;
-    const hemisphere = new THREE.HemisphereLight(0xc7e7ff, 0x06101a, 1.05);
-    const key = new THREE.DirectionalLight(0xe3f4ff, 1.55); key.position.set(-5, 7, 9);
-    const rim = new THREE.DirectionalLight(0xb9adff, 1.05); rim.position.set(7, 1, 7);
-    const activeLight = new THREE.PointLight(0x80caff, 0, 7, 2); scene.add(hemisphere, key, rim, activeLight);
+    const room = new RoomEnvironment();
+    const environmentTarget = pmrem.fromScene(room, .04);
+    room.dispose();
+    pmrem.dispose();
+    scene.environment = environmentTarget.texture;
 
-    const composer = new EffectComposer(renderer); composer.addPass(new RenderPass(scene, camera));
-    const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), .3, .35, 1.15); composer.addPass(bloom); composer.addPass(new OutputPass());
+    scene.add(new THREE.HemisphereLight(0xb8dcff, 0x03070d, 1.45));
+    const key = new THREE.DirectionalLight(0xd8f5ff, 2.1);
+    key.position.set(-5, 7, 8);
+    const rim = new THREE.DirectionalLight(0xb8aaff, 1.8);
+    rim.position.set(6, -2, 6);
+    const activeLight = new THREE.PointLight(0x80caff, 0, 9, 2);
+    scene.add(key, rim, activeLight);
 
-    const floor = new THREE.GridHelper(26, 26, 0x27445b, 0x152536);
-    const floorMat = floor.material as THREE.Material & { transparent: boolean; opacity: number };
-    floorMat.transparent = true; floorMat.opacity = .12; floor.position.y = -3.2; floor.position.z = -1; scene.add(floor);
+    const composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+    const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), .58, .42, 1.02);
+    composer.addPass(bloom);
+    composer.addPass(new OutputPass());
 
-    type LayerKey = "business" | "control" | "data" | "bottom";
-    type Company = { group: THREE.Group; shell: THREE.Mesh<THREE.BufferGeometry, THREE.MeshPhysicalMaterial>; layers: Record<LayerKey, THREE.Mesh<THREE.BufferGeometry, THREE.MeshPhysicalMaterial>>; accent: string };
-    function makeCompany(side: "provider" | "consumer"): Company {
-      const accent = side === "provider" ? providerColor : consumerColor;
+    const hitMeshes: THREE.Object3D[] = [];
+
+    type World = {
+      group: THREE.Group;
+      core: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
+      shell: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
+      halo: THREE.Points<THREE.BufferGeometry, THREE.ShaderMaterial>;
+      network: THREE.LineSegments<THREE.BufferGeometry, THREE.LineBasicMaterial>;
+      nodes: THREE.Points<THREE.BufferGeometry, THREE.ShaderMaterial>;
+      rings: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>[];
+      id: "provider" | "consumer";
+    };
+
+    function createWorld(id: "provider" | "consumer", color: string, seed: number): World {
       const group = new THREE.Group();
-      const shellMat = surface(accent, .93); shellMat.emissiveIntensity = .045;
-      const shell = new THREE.Mesh(rounded(4.05, 6.05, .24, .16), shellMat); group.add(shell);
-      const shellEdges = new THREE.LineSegments(geometry(new THREE.EdgesGeometry(shell.geometry, 25)), lineMaterial(accent, .24)); shellEdges.position.z = .09; group.add(shellEdges);
-      const stripe = new THREE.Mesh(geometry(new THREE.BoxGeometry(.035, 5.15, .04)), hero(accent, .55)); stripe.position.set(side === "provider" ? 1.83 : -1.83, 0, .13); group.add(stripe);
+      const core = new THREE.Mesh(geometry(new THREE.IcosahedronGeometry(.42, 2)), pbr(color, .55));
+      core.userData.nodeId = id;
+      hitMeshes.push(core);
+      group.add(core);
 
-      const definitions: Array<[LayerKey, number, string, string]> = side === "provider" ? [
-        ["business", 2.1, "BUSINESS APP", "publishes the offer"], ["control", .72, "CONTROL PLANE", "catalog · contract · transfer"],
-        ["data", -.86, "DATA PLANE", "authorized HTTP access"], ["bottom", -2.2, "PRIVATE SOURCE", "battery footprint stays here"],
-      ] : [
-        ["business", 2.1, "BUSINESS APP", "product-footprint workflow"], ["control", .72, "CONTROL PLANE", "discover · negotiate · start"],
-        ["data", -.86, "DATA PLANE", "authorized data request"], ["bottom", -2.2, "LOCAL USE", "received copy becomes value"],
-      ];
-      const layers = {} as Record<LayerKey, THREE.Mesh<THREE.BufferGeometry, THREE.MeshPhysicalMaterial>>;
-      for (const [layer, y, title, subtitle] of definitions) {
-        const mat = surface(accent, .98); const panel = new THREE.Mesh(rounded(3.28, .86, .13, .1), mat); panel.position.set(0, y, .13); group.add(panel); layers[layer] = panel;
-        const label = textSprite(title, subtitle, accent, .72); label.position.set(0, y, .24); group.add(label);
+      const shellMaterial = material(new THREE.MeshBasicMaterial({
+        color,
+        wireframe: true,
+        transparent: true,
+        opacity: .11,
+        depthWrite: false,
+      }));
+      const shell = new THREE.Mesh(geometry(new THREE.IcosahedronGeometry(1.58, 2)), shellMaterial);
+      group.add(shell);
+
+      const halo = glowPoints(color, 15, [0, 0, 0]);
+      halo.material.uniforms.energy.value = 1.4;
+      group.add(halo);
+
+      const rings = [0, 1, 2].map((_, index) => {
+        const ring = new THREE.Mesh(
+          geometry(new THREE.TorusGeometry(1.12 + index * .18, .012, 6, 72)),
+          material(new THREE.MeshBasicMaterial({ color, transparent: true, opacity: .14, depthWrite: false })),
+        );
+        ring.rotation.set(.5 + index * .7, index * .9, .2 + index * .4);
+        group.add(ring);
+        return ring;
+      });
+
+      const rand = seeded(seed);
+      const pts: THREE.Vector3[] = [];
+      for (let i = 0; i < 28; i++) {
+        const theta = i * 2.399963;
+        const phi = Math.acos(1 - 2 * (i + .5) / 28);
+        const radius = .72 + rand() * .72;
+        pts.push(new THREE.Vector3(
+          Math.cos(theta) * Math.sin(phi) * radius,
+          Math.sin(theta) * Math.sin(phi) * radius * .88,
+          Math.cos(phi) * radius * .84,
+        ));
       }
-      const header = textSprite(side === "provider" ? "COMPANY A" : "COMPANY B", side === "provider" ? "SUPPLIER · PROVIDER" : "MANUFACTURER · CONSUMER", accent, .9);
-      header.position.set(0, 3.34, .22); group.add(header);
-      scene.add(group); return { group, shell, layers, accent };
+
+      const edgeData: number[] = [];
+      pts.forEach((point, i) => {
+        let nearest = -1;
+        let distance = Infinity;
+        pts.forEach((candidate, j) => {
+          if (i === j) return;
+          const d = point.distanceToSquared(candidate);
+          if (d < distance) { distance = d; nearest = j; }
+        });
+        if (nearest >= 0 && nearest > i) edgeData.push(...point.toArray(), ...pts[nearest].toArray());
+      });
+      const edgeGeometry = geometry(new THREE.BufferGeometry());
+      edgeGeometry.setAttribute("position", new THREE.Float32BufferAttribute(edgeData, 3));
+      const networkMaterial = lineMat(color, .18);
+      const network = new THREE.LineSegments(edgeGeometry, networkMaterial);
+      group.add(network);
+
+      const nodePoints = glowPoints(color, 2.5, pts.flatMap(point => point.toArray()));
+      nodePoints.material.uniforms.opacity.value = .72;
+      group.add(nodePoints);
+
+      scene.add(group);
+      return { group, core, shell, halo, network, nodes: nodePoints, rings, id };
     }
-    const provider = makeCompany("provider"), consumer = makeCompany("consumer");
 
-    const controlRailGeometry = geometry(new THREE.BufferGeometry());
-    const dataRailGeometry = geometry(new THREE.BufferGeometry());
-    const controlRail = new THREE.Line(controlRailGeometry, lineMaterial(controlColor, .13));
-    const dataRail = new THREE.Line(dataRailGeometry, lineMaterial(dataColor, .12)); scene.add(controlRail, dataRail);
+    const providerWorld = createWorld("provider", providerColor, 91);
+    const consumerWorld = createWorld("consumer", consumerColor, 133);
 
-    const corridorControlLabel = textSprite("CONTROL PLANE", "DSP messages · metadata · agreements", controlColor, .68); scene.add(corridorControlLabel);
-    const corridorDataLabel = textSprite("DATA PLANE", "EDR-authorized payload access", dataColor, .68); scene.add(corridorDataLabel);
+    type Glyph = {
+      id: NodeId;
+      group: THREE.Group;
+      core: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
+      rings: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>[];
+      halo: THREE.Points<THREE.BufferGeometry, THREE.ShaderMaterial>;
+    };
 
-    function card(title: string, subtitle: string, color: string) {
-      const group = new THREE.Group(); const mat = surface(color, .98); mat.emissiveIntensity = .12;
-      const panel = new THREE.Mesh(rounded(1.9, 1.02, .15, .12), mat); group.add(panel);
-      const label = textSprite(title, subtitle, color, .58); label.position.z = .13; group.add(label);
-      scene.add(group); return { group, panel };
+    function createGlyph(id: Exclude<NodeId, "provider" | "consumer">, shape: THREE.BufferGeometry) {
+      const color = journeyNodes[id].color;
+      const group = new THREE.Group();
+      const core = new THREE.Mesh(geometry(shape), pbr(color, .35));
+      core.userData.nodeId = id;
+      hitMeshes.push(core);
+      group.add(core);
+      const halo = glowPoints(color, 8, [0, 0, 0]);
+      halo.material.uniforms.opacity.value = .22;
+      group.add(halo);
+      const rings = [0, 1].map((_, i) => {
+        const ring = new THREE.Mesh(
+          geometry(new THREE.TorusGeometry(.38 + i * .12, .009, 6, 56)),
+          material(new THREE.MeshBasicMaterial({ color, transparent: true, opacity: .11, depthWrite: false })),
+        );
+        ring.rotation.set(i * .8 + .4, i * .6, i * .5);
+        group.add(ring);
+        return ring;
+      });
+      scene.add(group);
+      return { id, group, core, rings, halo } as Glyph;
     }
-    const providerOffer = card("DATA OFFER", "battery footprint · terms", controlColor);
-    const consumerOffer = card("VISIBLE OFFER", "metadata · usage terms", controlColor);
-    const dspCard = card("DSP 2025-1", "/.well-known/dspace-version", controlColor);
-    const termsCard = card("USAGE TERMS", "Product-footprint calculation", "#ffba77");
-    const edrCard = card("EDR", "endpoint · authorization", dataColor);
-    const agreementCard = card("FINALIZED", "contract agreement", contractColor);
-    agreementCard.panel.material.color.set("#221e13"); agreementCard.panel.material.emissiveIntensity = .65;
 
-    const gate = new THREE.Group();
-    const gateRings = [0, 1].map(i => { const ring = new THREE.Mesh(geometry(new THREE.TorusGeometry(.62 + i * .16, .022, 8, 72)), hero(i ? controlColor : providerColor, .85)); ring.rotation.y = Math.PI / 2; gate.add(ring); return ring; });
-    const gateCore = new THREE.Mesh(geometry(new THREE.OctahedronGeometry(.16, 1)), hero(controlColor, 1.1)); gate.add(gateCore); scene.add(gate);
+    const glyphs: Glyph[] = [
+      createGlyph("catalog", new THREE.BoxGeometry(.38, .32, .18)),
+      createGlyph("identity", new THREE.OctahedronGeometry(.28, 1)),
+      createGlyph("policy", new THREE.TetrahedronGeometry(.34, 1)),
+      createGlyph("agreement", new THREE.DodecahedronGeometry(.32, 1)),
+    ];
 
-    const sourceCore = new THREE.Mesh(geometry(new THREE.CylinderGeometry(.22, .22, .34, 24)), hero(dataColor, .6)); sourceCore.rotation.x = Math.PI / 2; scene.add(sourceCore);
-    const consumerCore = new THREE.Mesh(geometry(new THREE.OctahedronGeometry(.22, 1)), hero(dataColor, .9)); scene.add(consumerCore);
+    const source = new THREE.Group();
+    const sourceCore = new THREE.Mesh(geometry(new THREE.OctahedronGeometry(.25, 1)), pbr(dataColor, 1.2));
+    const sourceShell = new THREE.Mesh(
+      geometry(new THREE.IcosahedronGeometry(.4, 1)),
+      material(new THREE.MeshBasicMaterial({ color: dataColor, wireframe: true, transparent: true, opacity: .35, depthWrite: false })),
+    );
+    source.add(sourceCore, sourceShell);
+    scene.add(source);
 
-    type Path = { id: string; chapter: number; kind: SignalKind; curve: THREE.CubicBezierCurve3; line: THREE.Line<THREE.BufferGeometry, THREE.LineBasicMaterial>; token: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>; from: NodeId; to: NodeId };
+    type Path = {
+      beat: JourneyBeat;
+      chapter: number;
+      curve: THREE.CubicBezierCurve3;
+      line: THREE.Line<THREE.BufferGeometry, THREE.LineBasicMaterial>;
+      token: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
+      trail: THREE.Points<THREE.BufferGeometry, THREE.ShaderMaterial>;
+    };
     const paths: Path[] = [];
-    function tokenGeometry(id: string, kind: SignalKind) {
-      if (kind === "retrieval") return geometry(new THREE.TorusGeometry(.13, .035, 8, 28));
-      if (id.includes("contract")) return geometry(new THREE.CylinderGeometry(.13, .13, .055, 28));
-      if (id === "catalog-response") return geometry(new THREE.BoxGeometry(.34, .21, .055));
-      if (id === "transfer-start") return geometry(new THREE.OctahedronGeometry(.15, 1));
-      return geometry(new THREE.BoxGeometry(.24, .13, .055));
+
+    function tokenGeometry(beat: JourneyBeat) {
+      if (beat.id.includes("version")) return geometry(new THREE.TorusGeometry(.15, .035, 8, 28));
+      if (beat.id === "catalog-response") return geometry(new THREE.BoxGeometry(.3, .19, .08));
+      if (beat.id.includes("contract")) return geometry(new THREE.OctahedronGeometry(.15, 1));
+      if (beat.id === "fetch") return geometry(new THREE.TorusGeometry(.14, .03, 8, 30));
+      return geometry(new THREE.BoxGeometry(.24, .13, .07));
     }
-    function makePath(beat: JourneyBeat, chapter: number) {
+
+    function createPath(beat: JourneyBeat, chapter: number) {
       if (!beat.from || !beat.to) return;
-      const color = chapter === 5 ? contractColor : beat.kind === "retrieval" || beat.kind === "data" ? dataColor : controlColor;
+      const color = chapter === 5 ? contractColor : signalStyles[beat.kind].color;
       const curve = new THREE.CubicBezierCurve3(new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3());
-      const g = geometry(new THREE.BufferGeometry()); g.setAttribute("position", new THREE.Float32BufferAttribute(new Array(81 * 3).fill(0), 3));
-      const lm = lineMaterial(color, .1) as THREE.LineBasicMaterial;
-      const line = new THREE.Line(g, lm); const tm = hero(color, 1.5); const token = new THREE.Mesh(tokenGeometry(beat.id, beat.kind), tm);
-      if (beat.id.includes("contract")) token.rotation.x = Math.PI / 2;
-      scene.add(line, token); paths.push({ id: beat.id, chapter, kind: beat.kind, curve, line, token, from: beat.from, to: beat.to });
+      const g = geometry(new THREE.BufferGeometry());
+      g.setAttribute("position", new THREE.Float32BufferAttribute(new Array(101 * 3).fill(0), 3));
+      const line = new THREE.Line(g, lineMat(color, .08));
+      const token = new THREE.Mesh(tokenGeometry(beat), pbr(color, 1.8));
+      const trail = glowPoints(color, beat.kind === "data" ? 5.5 : 3.5, new Array(12 * 3).fill(0));
+      trail.frustumCulled = false;
+      trail.material.uniforms.opacity.value = .8;
+      scene.add(line, token, trail);
+      paths.push({ beat, chapter, curve, line, token, trail });
     }
-    journeySequences.forEach((beats, chapter) => beats.forEach(beat => makePath(beat, chapter)));
+    journeySequences.forEach((beats, chapter) => beats.forEach(beat => createPath(beat, chapter)));
+
+    const focusRing = new THREE.Group();
+    const focusRings = [0, 1].map((_, i) => {
+      const ring = new THREE.Mesh(
+        geometry(new THREE.TorusGeometry(.58 + i * .15, .014, 6, 72)),
+        material(new THREE.MeshBasicMaterial({ color: controlColor, transparent: true, opacity: .7, depthWrite: false })),
+      );
+      ring.rotation.set(.6 + i * .7, .2 + i, .1);
+      focusRing.add(ring);
+      return ring;
+    });
+    scene.add(focusRing);
+
+    const agreementGroup = new THREE.Group();
+    const agreementCore = new THREE.Mesh(
+      geometry(new THREE.DodecahedronGeometry(.48, 1)),
+      material(new THREE.MeshPhysicalMaterial({
+        color: "#8b6b1e",
+        emissive: contractColor,
+        emissiveIntensity: 1.45,
+        metalness: .82,
+        roughness: .16,
+        clearcoat: .9,
+        clearcoatRoughness: .08,
+      })),
+    );
+    agreementGroup.add(agreementCore);
+    const agreementHalo = glowPoints(contractColor, 12, [0, 0, 0]);
+    agreementHalo.material.uniforms.energy.value = 2.2;
+    agreementGroup.add(agreementHalo);
+    scene.add(agreementGroup);
+
+    const fragments = Array.from({ length: 8 }, (_, i) => {
+      const mesh = new THREE.Mesh(geometry(new THREE.TetrahedronGeometry(.15)), pbr(contractColor, 1.2));
+      mesh.userData.phase = i * Math.PI * 2 / 8;
+      scene.add(mesh);
+      return mesh;
+    });
+
+    const edr = new THREE.Group();
+    const edrRing = new THREE.Mesh(geometry(new THREE.TorusGeometry(.21, .05, 8, 36)), pbr(controlColor, 1.8));
+    const edrBar = new THREE.Mesh(geometry(new THREE.BoxGeometry(.34, .09, .09)), pbr(controlColor, 1.8));
+    edrBar.position.x = .3;
+    const edrGlow = glowPoints(controlColor, 9, [0, 0, 0]);
+    edr.add(edrRing, edrBar, edrGlow);
+    scene.add(edr);
 
     const payload = new THREE.Group();
-    const payloadCore = new THREE.Mesh(geometry(new THREE.CapsuleGeometry(.16, .28, 4, 10)), hero(dataColor, 2)); payloadCore.rotation.z = Math.PI / 2; payload.add(payloadCore);
-    const payloadShell = new THREE.Mesh(geometry(new THREE.IcosahedronGeometry(.32, 1)), material(new THREE.MeshBasicMaterial({ color: dataColor, wireframe: true, transparent: true, opacity: .38, depthWrite: false })));
-    payload.add(payloadShell); scene.add(payload);
-    const trailRings = [0, 1, 2].map(i => { const ring = new THREE.Mesh(geometry(new THREE.TorusGeometry(.18 + i * .018, .012, 6, 40)), material(new THREE.MeshBasicMaterial({ color: dataColor, transparent: true, opacity: .26 - i * .06, depthWrite: false }))); ring.rotation.y = Math.PI / 2; scene.add(ring); return ring; });
+    const payloadCore = new THREE.Mesh(geometry(new THREE.OctahedronGeometry(.25, 1)), pbr(dataColor, 2.2));
+    const payloadShell = new THREE.Mesh(
+      geometry(new THREE.IcosahedronGeometry(.42, 1)),
+      material(new THREE.MeshBasicMaterial({ color: dataColor, wireframe: true, transparent: true, opacity: .55, depthWrite: false })),
+    );
+    const payloadGlow = glowPoints(dataColor, 12, [0, 0, 0]);
+    payloadGlow.material.uniforms.energy.value = 2.4;
+    payload.add(payloadCore, payloadShell, payloadGlow);
+    scene.add(payload);
 
-    const useLineGeometry = geometry(new THREE.BufferGeometry());
-    const useLine = new THREE.Line(useLineGeometry, lineMaterial(dataColor, .4)); scene.add(useLine);
+    const payloadWake = glowPoints(dataColor, 4, new Array(18 * 3).fill(0));
+    payloadWake.frustumCulled = false;
+    payloadWake.material.uniforms.energy.value = 2;
+    scene.add(payloadWake);
 
-    const tmp = new THREE.Vector3(), projected = new THREE.Vector3(), red = new THREE.Color("#ff7185"), activeColor = new THREE.Color();
-    function planeY(kind: SignalKind) { return (kind === "retrieval" || kind === "data" ? -1.05 : .72) * layout.companyScale; }
-    function partyAnchor(id: NodeId, kind: SignalKind) {
-      const providerSide = id === "provider";
-      const x = providerSide ? -layout.companyX + 1.28 * layout.companyScale : layout.companyX - 1.28 * layout.companyScale;
-      return new THREE.Vector3(x, planeY(kind), .36);
+    const dustRand = seeded(7);
+    const dustPositions: number[] = [];
+    for (let i = 0; i < 90; i++) {
+      dustPositions.push((dustRand() - .5) * 24, (dustRand() - .5) * 9, (dustRand() - .5) * 8 - 2);
     }
-    function updateCurve(item: Path) {
-      const a = partyAnchor(item.from, item.kind), b = partyAnchor(item.to, item.kind);
-      const lift = item.kind === "data" ? .5 : item.kind === "retrieval" ? .62 : .72;
-      const bend = item.from === "consumer" ? .12 : -.12;
-      item.curve.v0.copy(a); item.curve.v3.copy(b);
-      item.curve.v1.copy(a).lerp(b, .34).add(new THREE.Vector3(0, bend, lift));
-      item.curve.v2.copy(a).lerp(b, .66).add(new THREE.Vector3(0, bend, lift));
-      const positions = item.line.geometry.getAttribute("position") as THREE.BufferAttribute;
-      for (let i = 0; i <= 80; i++) { item.curve.getPoint(i / 80, tmp); positions.setXYZ(i, tmp.x, tmp.y, tmp.z); }
-      positions.needsUpdate = true; item.line.geometry.computeBoundingSphere();
+    const dust = glowPoints("#6487a5", 1.05, dustPositions);
+    dust.material.uniforms.opacity.value = .2;
+    dust.material.uniforms.energy.value = .45;
+    scene.add(dust);
+
+    function updatePathGeometry(item: Path) {
+      const a = vec(item.beat.from!);
+      const b = vec(item.beat.to!);
+      const direction = item.beat.from === "consumer" ? 1 : -1;
+      const dataLane = item.beat.kind === "data" || item.beat.kind === "retrieval";
+      const liftY = dataLane ? -1.05 : .95;
+      const liftZ = item.beat.kind === "data" ? 1.6 : item.beat.kind === "retrieval" ? 1.25 : .85;
+      item.curve.v0.copy(a);
+      item.curve.v3.copy(b);
+      item.curve.v1.copy(a).lerp(b, .34).add(new THREE.Vector3(0, liftY + direction * .08, liftZ));
+      item.curve.v2.copy(a).lerp(b, .66).add(new THREE.Vector3(0, liftY - direction * .08, liftZ));
+      const attr = item.line.geometry.getAttribute("position") as THREE.BufferAttribute;
+      const point = new THREE.Vector3();
+      for (let i = 0; i <= 100; i++) {
+        item.curve.getPoint(i / 100, point);
+        attr.setXYZ(i, point.x, point.y, point.z);
+      }
+      attr.needsUpdate = true;
+      item.line.geometry.computeBoundingSphere();
     }
+
     function syncLayout() {
-      provider.group.position.set(-layout.companyX, 0, -.24); consumer.group.position.set(layout.companyX, 0, .24);
-      provider.group.scale.setScalar(layout.companyScale); consumer.group.scale.setScalar(layout.companyScale);
-      const innerLeft = -layout.companyX + 2.28 * layout.companyScale, innerRight = layout.companyX - 2.28 * layout.companyScale;
-      const controlY = .72 * layout.companyScale, dataY = -.86 * layout.companyScale;
-      controlRailGeometry.setFromPoints([new THREE.Vector3(innerLeft, controlY, .08), new THREE.Vector3(innerRight, controlY, .08)]);
-      dataRailGeometry.setFromPoints([new THREE.Vector3(innerLeft, dataY, .08), new THREE.Vector3(innerRight, dataY, .08)]);
-      corridorControlLabel.position.set(0, controlY + .5, -.05); corridorDataLabel.position.set(0, dataY + .48, -.05);
-      providerOffer.group.position.set(innerLeft - .05, 1.92 * layout.companyScale, .55);
-      consumerOffer.group.position.set(innerRight + .05, 1.92 * layout.companyScale, .55);
-      dspCard.group.position.set(0, 1.95 * layout.companyScale, .7);
-      termsCard.group.position.set(innerRight + .05, 1.92 * layout.companyScale, .62);
-      gate.position.copy(partyAnchor("provider", "control")).add(new THREE.Vector3(.05, 0, .45));
-      agreementCard.group.position.set(0, controlY, .86);
-      edrCard.group.position.set(innerRight + .05, -.05 * layout.companyScale, .72);
-      sourceCore.position.set(-layout.companyX + .95 * layout.companyScale, -2.2 * layout.companyScale, .25);
-      consumerCore.position.set(layout.companyX - .95 * layout.companyScale, -2.2 * layout.companyScale, .25);
-      useLineGeometry.setFromPoints([new THREE.Vector3(layout.companyX, dataY, .16), new THREE.Vector3(layout.companyX, 2.1 * layout.companyScale, .16)]);
-      paths.forEach(updateCurve);
-      camera.position.set(0, .25, layout.distance); targetCamera.copy(camera.position); lookAt.set(0, 0, 0); targetLookAt.copy(lookAt);
+      providerWorld.group.position.copy(vec("provider"));
+      consumerWorld.group.position.copy(vec("consumer"));
+      glyphs.forEach(glyph => glyph.group.position.copy(vec(glyph.id)));
+      const compact = camera.aspect < .9;
+      const worldScale = compact ? .78 : .96;
+      providerWorld.group.scale.setScalar(worldScale);
+      consumerWorld.group.scale.setScalar(worldScale);
+      glyphs.forEach(glyph => glyph.group.scale.setScalar(compact ? .82 : 1));
+      source.position.copy(vec("provider")).add(new THREE.Vector3(0, -1.25 * worldScale, .7));
+      agreementGroup.position.copy(vec("agreement"));
+      paths.forEach(updatePathGeometry);
+      camera.position.set(0, .1, layout.distance);
+      cameraTarget.copy(camera.position);
+      lookAt.set(0, 0, 0);
+      lookTarget.set(0, 0, 0);
     }
 
     const resize = new ResizeObserver(() => {
-      width = Math.max(element.clientWidth, 1); height = Math.max(element.clientHeight, 1);
-      renderer.setSize(width, height); composer.setSize(width, height); camera.aspect = width / height; camera.updateProjectionMatrix();
-      layout = journeyLayout(camera.aspect); syncLayout();
-    }); resize.observe(element);
+      width = Math.max(1, element.clientWidth);
+      height = Math.max(1, element.clientHeight);
+      renderer.setSize(width, height);
+      composer.setSize(width, height);
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      layout = journeyLayout(camera.aspect);
+      syncLayout();
+    });
+    resize.observe(element);
 
+    const raycaster = new THREE.Raycaster();
+    const rayPointer = new THREE.Vector2();
     const onPointerMove = (event: PointerEvent) => {
-      const rect = element.getBoundingClientRect(); if (!rect.width || !rect.height) return;
+      const rect = element.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
       pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -(((event.clientY - rect.top) / rect.height) * 2 - 1));
     };
     const resetPointer = () => pointer.set(0, 0);
-    element.addEventListener("pointermove", onPointerMove, { passive: true }); element.addEventListener("pointerleave", resetPointer);
+    const onPointerDown = (event: PointerEvent) => {
+      const rect = element.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      rayPointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -(((event.clientY - rect.top) / rect.height) * 2 - 1));
+      raycaster.setFromCamera(rayPointer, camera);
+      const hit = raycaster.intersectObjects(hitMeshes, false)[0]?.object;
+      const id = hit?.userData.nodeId as NodeId | undefined;
+      if (id) live.current.onSelect(id);
+    };
+    element.addEventListener("pointermove", onPointerMove, { passive: true });
+    element.addEventListener("pointerleave", resetPointer);
+    element.addEventListener("pointerdown", onPointerDown);
 
-    let raf = 0, lastRender = 0, disposed = false;
-    function setLayer(mesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshPhysicalMaterial>, accent: string, active: boolean) {
-      mesh.material.emissive.set(accent); mesh.material.emissiveIntensity = active ? .32 : .035; mesh.material.roughness = active ? .27 : .4;
-    }
+    const point = new THREE.Vector3();
+    const signalColor = new THREE.Color();
+    const faultColor = new THREE.Color("#ff7185");
+    let raf = 0;
+    let lastRender = 0;
+    let disposed = false;
+
     function render(now: number) {
-      if (disposed) return; raf = requestAnimationFrame(render);
-      const p = live.current; if (document.hidden) return;
-      const mobile = width < 720; const minFrame = p.paused || p.reduced ? 100 : mobile ? 1000 / 30 : 1000 / 45;
-      if (now - lastRender < minFrame) return; lastRender = now;
-      const sequence = sequenceFrame(p.chapter, p.progress, p.fault); const t = p.reduced ? 0 : sequence.position * chapters[p.chapter].duration;
-      const current = sequence.current; const dataPhase = current.kind === "retrieval" || current.kind === "data" || current.id === "read-source";
-      const businessPhase = p.chapter === 7 && (current.id === "use-record" || current.id === "value");
-      const sourcePhase = p.chapter === 0 || current.id === "read-source" || current.id === "payload";
+      if (disposed) return;
+      raf = requestAnimationFrame(render);
+      const p = live.current;
+      if (document.hidden) return;
+
+      const mobile = width < 720;
+      const frameGap = p.paused || p.reduced ? 100 : mobile ? 1000 / 30 : 1000 / 45;
+      if (now - lastRender < frameGap) return;
+      lastRender = now;
+
+      const sequence = sequenceFrame(p.chapter, p.progress, p.fault);
+      const current = sequence.current;
+      const t = p.reduced ? 0 : sequence.position * chapters[p.chapter].duration;
+      const focusId = p.selected ?? current.focus;
+      const focus = vec(focusId);
       const parallax = mobile || p.reduced ? 0 : 1;
-      const chapterX = [-.24, -.18, 0, 0, .12, 0, .08, .22][p.chapter] ?? 0;
-      const chapterY = p.chapter === 6 ? -.28 : p.chapter === 7 ? .12 : .12;
-      const push = p.chapter === 5 ? -.45 : p.chapter === 6 ? -.25 : 0;
-      targetCamera.set(chapterX + pointer.x * .16 * parallax, .25 + pointer.y * .1 * parallax, layout.distance + push);
-      targetLookAt.set(chapterX * .3, chapterY, .12);
-      if (!p.paused) { camera.position.lerp(targetCamera, p.reduced ? 1 : .045); lookAt.lerp(targetLookAt, p.reduced ? 1 : .055); }
+
+      const chapterPush = [-.1, .05, .16, -.18, -.08, -.42, .28, .04][p.chapter] ?? 0;
+      cameraTarget.set(pointer.x * .24 * parallax + focus.x * .015, .08 + pointer.y * .12 * parallax + focus.y * .01, layout.distance + chapterPush);
+      lookTarget.set(focus.x * .035 * parallax, focus.y * .025 * parallax, focus.z * .08 * parallax);
+      if (!p.paused) {
+        camera.position.lerp(cameraTarget, p.reduced ? 1 : .05);
+        lookAt.lerp(lookTarget, p.reduced ? 1 : .06);
+      }
       camera.lookAt(lookAt);
 
-      const signal = p.fault ? red : activeColor.set(p.chapter === 5 ? contractColor : dataPhase ? dataColor : controlColor);
-      activeLight.color.copy(signal); activeLight.intensity = p.reduced ? .6 : current.status === "active" || sequence.blocked ? 2.1 : .55;
-      if (current.from === "provider" || current.focus === "provider") activeLight.position.copy(dataPhase ? partyAnchor("provider", "data") : partyAnchor("provider", "control"));
-      else if (current.from === "consumer" || current.focus === "consumer") activeLight.position.copy(dataPhase ? partyAnchor("consumer", "data") : partyAnchor("consumer", "control"));
-      else activeLight.position.set(0, dataPhase ? -.8 : .8, 2.4);
-      activeLight.position.z += 2.2;
+      signalColor.copy(p.fault ? faultColor : new THREE.Color(p.chapter === 5 ? contractColor : signalStyles[current.kind].color));
+      activeLight.color.copy(signalColor);
+      activeLight.position.copy(focus).add(new THREE.Vector3(0, .6, 2.5));
+      activeLight.intensity = p.reduced ? .8 : current.status === "active" || sequence.blocked ? 3.1 : .7;
 
-      const providerInvolved = current.from === "provider" || current.to === "provider" || current.focus === "provider" || current.focus === "catalog" || current.focus === "identity" || current.focus === "policy" || current.focus === "agreement";
-      const consumerInvolved = current.from === "consumer" || current.to === "consumer" || current.focus === "consumer" || current.focus === "policy" || current.focus === "agreement";
-      setLayer(provider.layers.control, providerColor, providerInvolved && !dataPhase && !sourcePhase); setLayer(consumer.layers.control, consumerColor, consumerInvolved && !dataPhase && !businessPhase);
-      setLayer(provider.layers.data, providerColor, providerInvolved && dataPhase); setLayer(consumer.layers.data, consumerColor, consumerInvolved && dataPhase);
-      setLayer(provider.layers.bottom, providerColor, sourcePhase); setLayer(consumer.layers.business, consumerColor, businessPhase);
-      setLayer(provider.layers.business, providerColor, p.chapter === 1 && current.id === "register-asset"); setLayer(consumer.layers.bottom, consumerColor, p.chapter === 7 && sequence.copyDelivered);
-      provider.shell.material.emissiveIntensity = providerInvolved ? .08 : .025; consumer.shell.material.emissiveIntensity = consumerInvolved ? .08 : .025;
-
-      controlRail.material.opacity = dataPhase ? .045 : .14; dataRail.material.opacity = dataPhase ? .22 : .055;
-      corridorControlLabel.material.opacity = dataPhase ? .35 : .78; corridorDataLabel.material.opacity = dataPhase ? .9 : .38;
-
-      providerOffer.group.visible = p.chapter >= 1 && p.chapter <= 5; providerOffer.panel.material.emissiveIntensity = p.chapter === 1 ? .55 : .1;
-      dspCard.group.visible = p.chapter === 2; dspCard.panel.material.emissiveIntensity = current.id.includes("version") ? .75 : .18;
-      const catalogResponse = sequence.beats.find(beat => beat.id === "catalog-response");
-      consumerOffer.group.visible = p.chapter === 4 || p.chapter === 5 || (p.chapter === 3 && !!catalogResponse && catalogResponse.status !== "upcoming");
-      consumerOffer.panel.material.emissiveIntensity = p.chapter === 3 && catalogResponse?.status === "active" ? .7 : .12;
-      termsCard.group.visible = p.chapter === 4; termsCard.panel.material.emissiveIntensity = .38 + (current.focus === "policy" ? .38 : 0);
-
-      const gateActive = p.chapter === 3 && (current.id === "credential-check" || current.id === "access-check" || p.fault === "identity"); gate.visible = gateActive;
-      gateRings.forEach((ring, i) => { ring.rotation.z = t * (.22 + i * .08) * (i ? -1 : 1); ring.scale.setScalar(p.fault ? 1.05 : .88 + (sequence.identityVerified ? .12 : Math.sin(t * 1.4 + i) * .04)); (ring.material as THREE.MeshStandardMaterial).emissive.set(p.fault ? "#ff7185" : i ? controlColor : providerColor); });
-      gateCore.rotation.y = t * .6; (gateCore.material as THREE.MeshStandardMaterial).emissive.set(p.fault ? "#ff7185" : controlColor);
-
-      const finalized = sequence.beats.find(beat => beat.id === "contract-finalized"); const seal = sequence.beats.find(beat => beat.id === "seal");
-      const agreementShowing = p.chapter > 5 || sequence.agreementReady || (p.chapter === 5 && finalized?.status === "active"); agreementCard.group.visible = agreementShowing;
-      const agreementFraction = p.chapter === 5 ? smooth(seal?.fraction ?? finalized?.fraction ?? 0) : 1; agreementCard.group.scale.setScalar(.72 + agreementFraction * .28); agreementCard.panel.material.emissiveIntensity = .45 + agreementFraction * .65;
-
-      const transferStart = sequence.beats.find(beat => beat.id === "transfer-start"); edrCard.group.visible = p.chapter > 6 || sequence.edrReady || (p.chapter === 6 && transferStart?.status === "active");
-      edrCard.panel.material.emissiveIntensity = transferStart?.status === "active" ? .95 : .28;
-
-      paths.forEach(item => {
-        const beat = item.chapter === p.chapter ? sequence.beats.find(candidate => candidate.id === item.id) : undefined; const active = beat?.status === "active", done = beat?.status === "done";
-        item.line.visible = !!(active || done); item.line.material.opacity = active ? .78 : .08; item.line.geometry.setDrawRange(0, Math.floor(81 * (done || p.reduced ? 1 : smooth(beat?.fraction ?? 0))));
-        item.token.visible = !!(active && item.kind !== "data"); if (active) { item.curve.getPoint(p.reduced ? .5 : smooth(beat?.fraction ?? 0), item.token.position); item.token.rotation.y += .025; item.token.material.emissiveIntensity = 1.8; }
+      const providerActive = current.from === "provider" || current.to === "provider" || current.focus === "provider" || current.focus === "catalog" || current.focus === "identity";
+      const consumerActive = current.from === "consumer" || current.to === "consumer" || current.focus === "consumer" || current.focus === "policy";
+      [providerWorld, consumerWorld].forEach((world, index) => {
+        const active = index === 0 ? providerActive : consumerActive;
+        const activated = index === 0 || sequence.copyDelivered || p.chapter === 7;
+        world.group.rotation.y = Math.sin(t * .11 + index) * .12 + pointer.x * .035 * parallax * (index ? 1 : -1);
+        world.group.rotation.x = pointer.y * .02 * parallax;
+        world.shell.rotation.y = -t * .055 * (index ? 1 : -1);
+        world.core.rotation.set(t * .16, t * .27 * (index ? -1 : 1), .15);
+        world.core.material.emissiveIntensity = active ? 1.25 : activated ? .48 : .16;
+        world.shell.material.opacity = active ? .24 : activated ? .12 : .06;
+        world.network.material.opacity = active ? .38 : activated ? .17 : .07;
+        world.nodes.material.uniforms.opacity.value = active ? .95 : activated ? .58 : .25;
+        world.nodes.material.uniforms.energy.value = active ? 1.5 : .7;
+        world.halo.material.uniforms.opacity.value = active ? .82 : activated ? .42 : .18;
+        world.rings.forEach((ring, i) => {
+          ring.rotation.x += p.reduced ? 0 : .0009 * (i + 1);
+          ring.rotation.y += p.reduced ? 0 : .0012 * (i + 1) * (index ? -1 : 1);
+          ring.material.opacity = active ? .38 - i * .06 : .12 - i * .02;
+        });
       });
 
-      sourceCore.rotation.z = t * .22; (sourceCore.material as THREE.MeshStandardMaterial).emissiveIntensity = sourcePhase ? 1.75 : .5;
-      const payloadBeat = sequence.beats.find(beat => beat.id === "payload"); const payloadPath = paths.find(item => item.id === "payload");
-      payload.visible = sequence.copyVisible; trailRings.forEach(r => r.visible = !!(payloadBeat?.status === "active" && !p.reduced));
-      if (sequence.copyDelivered) payload.position.copy(partyAnchor("consumer", "data")).add(new THREE.Vector3(.25, -.38, .36));
-      else if (payloadPath) payloadPath.curve.getPoint(smooth(payloadBeat?.fraction ?? 0), payload.position);
-      payloadCore.rotation.x = t * .38; payloadShell.rotation.set(t * .21, -t * .34, t * .18);
-      if (payloadPath && payloadBeat?.status === "active") trailRings.forEach((ring, i) => payloadPath.curve.getPoint(smooth(Math.max(0, payloadBeat.fraction - .045 * (i + 1))), ring.position));
+      glyphs.forEach(glyph => {
+        const active = glyph.id === focusId;
+        const blocked = sequence.blocked && glyph.id === current.focus;
+        const color = blocked ? faultColor : new THREE.Color(journeyNodes[glyph.id].color);
+        glyph.core.material.color.copy(color).multiplyScalar(active ? .78 : .4);
+        glyph.core.material.emissive.copy(color);
+        glyph.core.material.emissiveIntensity = active ? 1.75 : .12;
+        glyph.halo.material.uniforms.tint.value.copy(color);
+        glyph.halo.material.uniforms.opacity.value = active ? .95 : .12;
+        glyph.halo.material.uniforms.energy.value = active ? 2 : .5;
+        glyph.core.rotation.set(t * .19, t * .34, t * .11);
+        glyph.rings.forEach((ring, i) => {
+          ring.material.color.copy(color);
+          ring.material.opacity = active ? .62 - i * .15 : .08;
+          ring.rotation.z = t * (.08 + i * .04);
+        });
+      });
 
-      consumerCore.visible = p.chapter === 7; consumerCore.rotation.y = t * .45; (consumerCore.material as THREE.MeshStandardMaterial).emissiveIntensity = sequence.consumerActivated ? 2.2 : .7;
-      useLine.visible = p.chapter === 7; useLine.material.opacity = sequence.consumerActivated ? .8 : .16;
+      focusRing.position.copy(focus);
+      focusRing.visible = current.status === "active" || sequence.blocked;
+      focusRings.forEach((ring, i) => {
+        ring.material.color.copy(signalColor);
+        ring.material.opacity = p.reduced ? .4 : .52 + Math.sin(t * 1.8 + i) * .13;
+        ring.rotation.z = t * (.22 + i * .08) * (i ? -1 : 1);
+        ring.scale.setScalar(1 + Math.sin(t * 1.5 + i) * .05);
+      });
 
-      for (const id of nodeIds) {
-        const label = labels.current[id]; if (!label) continue;
-        if (id === "provider") projected.set(-layout.companyX, 3.55 * layout.companyScale, .05);
-        else if (id === "consumer") projected.set(layout.companyX, 3.55 * layout.companyScale, .05);
-        else projected.set(...layout.positions[id]);
-        projected.project(camera); const halfLabel = label.offsetWidth / 2 + 8;
-        label.style.left = `${THREE.MathUtils.clamp((projected.x * .5 + .5) * width, halfLabel, width - halfLabel)}px`;
-        label.style.top = `${THREE.MathUtils.clamp((-projected.y * .5 + .5) * height, 0, height - label.offsetHeight)}px`;
+      const processingLocal = current.kind === "local" && current.status === "active";
+      focusRing.scale.setScalar(processingLocal ? .88 + Math.sin(t * 2.1) * .08 : 1);
+
+      paths.forEach(item => {
+        const beat = item.chapter === p.chapter ? sequence.beats.find(candidate => candidate.id === item.beat.id) : undefined;
+        const active = beat?.status === "active";
+        const done = beat?.status === "done";
+        const fraction = beat?.fraction ?? 0;
+        item.line.visible = !!(active || done);
+        item.line.material.opacity = active ? .72 : done ? .028 : 0;
+        item.line.geometry.setDrawRange(0, Math.floor(101 * (done || p.reduced ? 1 : smooth(fraction))));
+        const custom = item.beat.id === "transfer-start" || item.beat.id === "payload";
+        item.token.visible = !!(active && !custom);
+        item.trail.visible = !!(active && !custom && !p.reduced);
+        if (active && !custom) {
+          item.curve.getPoint(smooth(fraction), item.token.position);
+          item.token.rotation.set(t * .3, t * .5, t * .22);
+          const attr = item.trail.geometry.getAttribute("position") as THREE.BufferAttribute;
+          for (let i = 0; i < 12; i++) {
+            item.curve.getPoint(smooth(Math.max(0, fraction - i * .02)), point);
+            attr.setXYZ(i, point.x, point.y, point.z);
+          }
+          attr.needsUpdate = true;
+        }
+      });
+
+      sourceCore.rotation.set(t * .23, t * .48, .2);
+      sourceShell.rotation.set(-t * .15, t * .22, .1);
+      const sourceActive = p.chapter === 0 || current.id === "read-source" || current.id === "payload";
+      sourceCore.material.emissiveIntensity = sourceActive ? 1.8 : .6;
+      source.scale.setScalar(p.chapter === 0 ? .8 + smooth(sequence.position) * .25 : 1);
+
+      const finalized = sequence.beats.find(beat => beat.id === "contract-finalized");
+      const sealBeat = sequence.beats.find(beat => beat.id === "seal");
+      const assembling = p.chapter === 5 && finalized?.status === "active";
+      const assembly = sequence.agreementReady ? smooth(sealBeat?.fraction ?? 0) : assembling ? smooth(finalized?.fraction ?? 0) * .75 : 0;
+      agreementGroup.visible = p.chapter > 5 || sequence.agreementReady || assembling;
+      agreementGroup.scale.setScalar(.3 + Math.max(.05, assembly) * .9);
+      agreementCore.rotation.set(t * .18, t * .32, .2);
+      agreementCore.material.emissiveIntensity = 1.2 + assembly * 1.4;
+      fragments.forEach((fragment, i) => {
+        const show = p.chapter === 5 && (assembling || sequence.agreementReady) && assembly < .96 && !p.reduced;
+        fragment.visible = show;
+        if (!show) return;
+        const phase = fragment.userData.phase as number;
+        const radius = THREE.MathUtils.lerp(1.5, .16, assembly);
+        fragment.position.copy(vec("agreement")).add(new THREE.Vector3(
+          Math.cos(phase + t * .18) * radius,
+          Math.sin(phase + t * .18) * radius * .62,
+          Math.sin(phase * 1.7) * .75 * (1 - assembly),
+        ));
+        fragment.rotation.set(t * .5 + i, t * .4 + phase, t * .3);
+      });
+
+      const transferStart = sequence.beats.find(beat => beat.id === "transfer-start");
+      const edrPath = paths.find(item => item.beat.id === "transfer-start");
+      edr.visible = p.chapter > 6 || sequence.edrReady || !!(transferStart && transferStart.status === "active");
+      if (p.chapter > 6 || sequence.edrReady) {
+        edr.position.copy(vec("consumer")).add(new THREE.Vector3(-.15, 1.05, .72));
+      } else if (edrPath && transferStart?.status === "active") {
+        edrPath.curve.getPoint(smooth(transferStart.fraction), edr.position);
+      }
+      edr.rotation.set(.25, t * .45, t * .13);
+      const edrEnergy = transferStart?.status === "active" ? 2.2 : .9;
+      (edrRing.material as THREE.MeshStandardMaterial).emissiveIntensity = edrEnergy;
+      (edrBar.material as THREE.MeshStandardMaterial).emissiveIntensity = edrEnergy;
+
+      const payloadBeat = sequence.beats.find(beat => beat.id === "payload");
+      const payloadPath = paths.find(item => item.beat.id === "payload");
+      payload.visible = sequence.copyVisible;
+      payloadWake.visible = !!(payloadBeat?.status === "active" && !p.reduced);
+      if (sequence.copyDelivered) {
+        payload.position.copy(vec("consumer")).add(new THREE.Vector3(0, -1.05, .72));
+      } else if (payloadPath) {
+        payloadPath.curve.getPoint(smooth(payloadBeat?.fraction ?? 0), payload.position);
+      }
+      payloadCore.rotation.set(t * .35, t * .62, t * .18);
+      payloadShell.rotation.set(-t * .22, t * .4, t * .28);
+      if (payloadPath && payloadBeat?.status === "active") {
+        const attr = payloadWake.geometry.getAttribute("position") as THREE.BufferAttribute;
+        for (let i = 0; i < 18; i++) {
+          payloadPath.curve.getPoint(smooth(Math.max(0, payloadBeat.fraction - i * .017)), point);
+          attr.setXYZ(i, point.x, point.y, point.z);
+        }
+        attr.needsUpdate = true;
       }
 
-      if (!mobile && !p.reduced) composer.render(); else renderer.render(scene, camera);
+      dust.rotation.y = t * .004;
+      if (!mobile && !p.reduced) composer.render();
+      else renderer.render(scene, camera);
     }
 
-    syncLayout(); raf = requestAnimationFrame(render);
-    const lost = (event: Event) => { event.preventDefault(); setUnavailable(true); cancelAnimationFrame(raf); };
+    syncLayout();
+    raf = requestAnimationFrame(render);
+
+    const lost = (event: Event) => {
+      event.preventDefault();
+      setUnavailable(true);
+      cancelAnimationFrame(raf);
+    };
     renderer.domElement.addEventListener("webglcontextlost", lost);
+
     return () => {
-      disposed = true; cancelAnimationFrame(raf); resize.disconnect(); element.removeEventListener("pointermove", onPointerMove); element.removeEventListener("pointerleave", resetPointer);
-      renderer.domElement.removeEventListener("webglcontextlost", lost); composer.dispose(); environment.dispose(); textures.forEach(texture => texture.dispose()); geometries.forEach(g => g.dispose()); materials.forEach(m => m.dispose()); renderer.dispose(); renderer.domElement.remove();
+      disposed = true;
+      cancelAnimationFrame(raf);
+      resize.disconnect();
+      element.removeEventListener("pointermove", onPointerMove);
+      element.removeEventListener("pointerleave", resetPointer);
+      element.removeEventListener("pointerdown", onPointerDown);
+      renderer.domElement.removeEventListener("webglcontextlost", lost);
+      composer.dispose();
+      environmentTarget.dispose();
+      geometries.forEach(g => g.dispose());
+      materials.forEach(m => m.dispose());
+      renderer.dispose();
+      renderer.domElement.remove();
     };
   }, []);
 
-  if (unavailable) return <SimpleScene {...props}/>;
-  const currentFocus = sequenceFrame(props.chapter, props.progress, props.fault).current.focus;
-  return <div ref={host} className={styles.canvas} role="group" aria-label="Conceptual Tractus-X dataspace: Company A and Company B with explicit control-plane and data-plane architecture.">
-    {nodeIds.map(id => <button key={id} ref={el => { labels.current[id] = el; }} className={styles.nodeLabel} data-active={props.selected === id || currentFocus === id} style={{ "--node-color": journeyNodes[id].color } as React.CSSProperties} onClick={() => props.onSelect(id)} aria-pressed={props.selected === id}><span>{journeyNodes[id].label}</span><small>{journeyNodes[id].role}</small></button>)}
-  </div>;
+  if (unavailable) return <SimpleScene {...props} />;
+
+  const sequence = sequenceFrame(props.chapter, props.progress, props.fault);
+  const focus = props.selected ?? sequence.current.focus;
+  return (
+    <div ref={host} className={styles.canvas} role="group" aria-label="Cinematic conceptual Tractus-X dataspace with two independent company worlds and governed exchanges between them.">
+      <button
+        className={styles.nodeLabel}
+        data-active={focus === "provider"}
+        style={{ left: "18%", top: "10%", "--node-color": providerColor } as React.CSSProperties}
+        onClick={() => props.onSelect("provider")}
+        aria-pressed={props.selected === "provider"}
+      >
+        <span>Company A</span><small>Supplier · Provider</small>
+      </button>
+      <button
+        className={styles.nodeLabel}
+        data-active={focus === "consumer"}
+        style={{ left: "82%", top: "10%", "--node-color": consumerColor } as React.CSSProperties}
+        onClick={() => props.onSelect("consumer")}
+        aria-pressed={props.selected === "consumer"}
+      >
+        <span>Company B</span><small>Manufacturer · Consumer</small>
+      </button>
+    </div>
+  );
 }
 
-/** Readable fallback that preserves the same causal sequence without WebGL. */
+/** Lightweight fallback using the same ordered teaching beats. */
 export function SimpleScene({ chapter, progress, fault, selected, onSelect }: SceneProps) {
-  const sequence = sequenceFrame(chapter, progress, fault); const marker = useId();
-  const party = { provider: { x: 85, control: 135, data: 245 }, consumer: { x: 635, control: 135, data: 245 } } as const;
-  const endpoint = (id: NodeId, kind: SignalKind) => id === "provider" || id === "consumer" ? [party[id].x, kind === "retrieval" || kind === "data" ? party[id].data : party[id].control] : id === "agreement" ? [360, 135] : id === "catalog" || id === "identity" ? [210, 80] : [510, 80];
+  const sequence = sequenceFrame(chapter, progress, fault);
+  const marker = useId();
+  const positions: Record<NodeId, [number, number]> = {
+    provider: [110, 180], consumer: [610, 180], catalog: [265, 78],
+    identity: [360, 78], policy: [455, 78], agreement: [360, 282],
+  };
   return <div className={styles.simpleScene}>
-    <svg viewBox="0 0 720 350" role="img" aria-label={`${chapters[chapter].title}. ${fault ? "Failure snapshot." : sequence.current.title}`}>
-      <defs><marker id={marker} viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="context-stroke"/></marker></defs>
-      <rect x="20" y="30" width="190" height="285" rx="20" fill="#091622" stroke={providerColor} opacity=".9"/><rect x="510" y="30" width="190" height="285" rx="20" fill="#0d1022" stroke={consumerColor} opacity=".9"/>
-      <text x="115" y="60" fill={providerColor} textAnchor="middle" fontSize="15">COMPANY A · PROVIDER</text><text x="605" y="60" fill={consumerColor} textAnchor="middle" fontSize="15">COMPANY B · CONSUMER</text>
-      {[{ y: 100, a: "BUSINESS APP", b: "BUSINESS APP" }, { y: 135, a: "CONTROL PLANE", b: "CONTROL PLANE" }, { y: 245, a: "DATA PLANE", b: "DATA PLANE" }, { y: 285, a: "PRIVATE SOURCE", b: "LOCAL USE" }].map(row => <g key={row.y}><rect x="42" y={row.y - 18} width="146" height="34" rx="7" fill="#101f2c" stroke="#28594f"/><rect x="532" y={row.y - 18} width="146" height="34" rx="7" fill="#15192e" stroke="#4d487d"/><text x="115" y={row.y + 5} fill="#d8e7ee" textAnchor="middle" fontSize="11">{row.a}</text><text x="605" y={row.y + 5} fill="#e0def5" textAnchor="middle" fontSize="11">{row.b}</text></g>)}
-      <line x1="188" y1="135" x2="532" y2="135" stroke={controlColor} opacity=".18"/><line x1="188" y1="245" x2="532" y2="245" stroke={dataColor} opacity=".18"/>
-      <text x="360" y="124" fill={controlColor} textAnchor="middle" fontSize="10">CONTROL PLANE · DSP</text><text x="360" y="234" fill={dataColor} textAnchor="middle" fontSize="10">DATA PLANE · AUTHORIZED PAYLOAD</text>
-      {sequence.beats.filter(beat => beat.from && beat.to && (beat.status === "active" || beat.status === "done")).map(beat => { const [x1, y1] = endpoint(beat.from!, beat.kind), [x2, y2] = endpoint(beat.to!, beat.kind); return <path key={beat.id} d={`M${x1} ${y1} C${(x1+x2)/2} ${y1-35} ${(x1+x2)/2} ${y2-35} ${x2} ${y2}`} fill="none" stroke={chapter === 5 ? contractColor : beat.kind === "retrieval" || beat.kind === "data" ? dataColor : controlColor} opacity={beat.status === "active" ? 1 : .18} strokeWidth={beat.kind === "data" ? 4 : 2} markerEnd={`url(#${marker})`}/>; })}
-      {sequence.agreementReady && <rect x="300" y="152" width="120" height="34" rx="10" fill="#302813" stroke={contractColor}/>} {sequence.agreementReady && <text x="360" y="174" fill={contractColor} textAnchor="middle" fontSize="10">FINALIZED AGREEMENT</text>}
-      {sequence.edrReady && <rect x="430" y="188" width="80" height="30" rx="8" fill="#102b2a" stroke={dataColor}/>} {sequence.edrReady && <text x="470" y="207" fill={dataColor} textAnchor="middle" fontSize="10">EDR</text>}
-      {sequence.copyVisible && <circle cx={sequence.copyDelivered ? 605 : 360} cy="245" r="9" fill={dataColor}/>}<circle cx="115" cy="285" r="7" fill={dataColor}/>
+    <svg viewBox="0 0 720 360" role="img" aria-label={`${chapters[chapter].title}. ${fault ? "Failure snapshot." : sequence.current.title}`}>
+      <defs>
+        <marker id={marker} viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 Z" fill="context-stroke"/>
+        </marker>
+      </defs>
+      {sequence.beats.filter(beat => beat.from && beat.to && (beat.status === "active" || beat.status === "done")).map(beat => {
+        const a = positions[beat.from!], b = positions[beat.to!];
+        const dataLane = beat.kind === "data" || beat.kind === "retrieval";
+        const bend = dataLane ? 88 : -78;
+        return <path
+          key={beat.id}
+          d={`M${a[0]} ${a[1]} Q${(a[0] + b[0]) / 2} ${(a[1] + b[1]) / 2 + bend} ${b[0]} ${b[1]}`}
+          fill="none"
+          stroke={chapter === 5 ? contractColor : signalStyles[beat.kind].color}
+          opacity={beat.status === "active" ? 1 : .1}
+          strokeWidth={beat.kind === "data" ? 4 : 2}
+          markerEnd={`url(#${marker})`}
+        />;
+      })}
+      {(["provider", "consumer"] as const).map(id => {
+        const [x, y] = positions[id];
+        const color = id === "provider" ? providerColor : consumerColor;
+        const active = sequence.current.focus === id;
+        return <g key={id}>
+          <circle cx={x} cy={y} r="62" fill="#07131f" stroke={color} strokeWidth={active ? 3 : 1.5}/>
+          <circle cx={x} cy={y} r="47" fill="none" stroke={color} opacity=".35" strokeDasharray="3 8"/>
+          <circle cx={x} cy={y} r="18" fill={color} opacity={active ? 1 : .6}/>
+          <text x={x} y={y + 88} fill="#e6f1ff" textAnchor="middle" fontSize="16">{journeyNodes[id].label}</text>
+        </g>;
+      })}
+      {(["catalog", "identity", "policy", "agreement"] as const).map(id => {
+        const [x, y] = positions[id];
+        const active = sequence.current.focus === id;
+        return <g key={id} opacity={active ? 1 : .36}>
+          <circle cx={x} cy={y} r={active ? 23 : 17} fill="#0b1724" stroke={journeyNodes[id].color}/>
+          <circle cx={x} cy={y} r="6" fill={journeyNodes[id].color}/>
+        </g>;
+      })}
+      <path d="M110 205 l9 9 -9 9 -9 -9 Z" fill={dataColor}/>
+      {sequence.agreementReady && <path d="M360 258 l22 22 -22 22 -22 -22 Z" fill="none" stroke={contractColor} strokeWidth="3"/>}
+      {sequence.edrReady && <circle cx="545" cy="135" r="11" fill="none" stroke={controlColor} strokeWidth="4"/>}
+      {sequence.copyVisible && <path transform={`translate(${sequence.copyDelivered ? 610 : 360} 214)`} d="M0 -10 l10 10 -10 10 -10 -10 Z" fill={dataColor}/>} 
     </svg>
-    <div className={styles.simpleNodes}>{nodeIds.map(id => <button key={id} onClick={() => onSelect(id)} aria-pressed={selected === id}>{journeyNodes[id].label}</button>)}</div>
+    <div className={styles.simpleNodes}>
+      {(Object.keys(journeyNodes) as NodeId[]).map(id => <button key={id} onClick={() => onSelect(id)} aria-pressed={selected === id}>{journeyNodes[id].label}</button>)}
+    </div>
   </div>;
 }
