@@ -2,7 +2,7 @@ import type { NodeId } from "./data-journey";
 
 /** Responsive coordinates for a two-company dataspace stage. */
 export function journeyLayout(aspect: number) {
-  const safeAspect = Number.isFinite(aspect) && safeAspect > 0 ? aspect : 1;
+  const safeAspect = Number.isFinite(aspect) && aspect > 0 ? aspect : 1;
   const compact = safeAspect < .9;
   const companyScale = compact ? .72 : safeAspect < 1.25 ? .86 : 1;
   // Keep the companies closer on desktop so the dataspace corridor reads as a relationship, not empty canvas.
