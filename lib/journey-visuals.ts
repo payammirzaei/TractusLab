@@ -6,17 +6,18 @@ export function journeyLayout(aspect: number) {
   const compact = safeAspect < .9;
   const companyScale = compact ? .72 : safeAspect < 1.25 ? .86 : 1;
   const companyX = compact ? 3.35 : Math.min(5.7, Math.max(4.45, safeAspect * 3.15));
+  const depth = compact ? .42 : safeAspect < 1.25 ? .72 : 1;
   const controlY = .75;
   const dataY = -1.05;
   const topY = 2.25;
   const bottomY = -2.35;
   const positions: Record<NodeId, [number, number, number]> = {
-    provider: [-companyX, 0, -.2],
-    consumer: [companyX, 0, .2],
-    catalog: [-companyX + 1.55 * companyScale, 1.55, .65],
-    identity: [-companyX + 1.55 * companyScale, controlY, .95],
-    policy: [companyX - 1.55 * companyScale, 1.55, .65],
-    agreement: [0, controlY, 1.05],
+    provider: [-companyX, 0, -.2 * depth],
+    consumer: [companyX, 0, .2 * depth],
+    catalog: [-companyX + 1.55 * companyScale, 1.55, .65 * depth],
+    identity: [-companyX + 1.55 * companyScale, controlY, .95 * depth],
+    policy: [companyX - 1.55 * companyScale, 1.55, .65 * depth],
+    agreement: [0, controlY, 1.05 * depth],
   };
   const halfWidth = companyX + 2.15 * companyScale;
   const halfHeight = 3.75;
@@ -32,6 +33,6 @@ export const journeyMoments = [
   { title: "Ask. Prove. Filter. Return.", detail: "Credentials and access policy shape the catalogue Company B receives.", result: "OFFER VISIBLE" },
   { title: "Know the terms before you ask.", detail: "Company B selects an offer that fits its intended use.", result: "OFFER SELECTED" },
   { title: "Agreement is a control-plane event.", detail: "Usage policy is evaluated before the negotiation can finalize.", result: "AGREEMENT FINALIZED" },
-  { title: "First the key. Then the data.", detail: "The EDR arrives before the authorized data-plane fetch.", result: "COPY DELIVERED" },
+  { title: "First the key. Then the data.", detail: "The EDR arrives before the authorized data-plane fetch; Company A keeps the original source.", result: "COPY DELIVERED" },
   { title: "Governed access becomes business value.", detail: "Company B uses the copy while Company A keeps the source.", result: "VALUE CREATED" },
 ] as const;
