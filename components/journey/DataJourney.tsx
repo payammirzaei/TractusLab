@@ -10,7 +10,7 @@ import { journeyMoments } from "@/lib/journey-visuals";
 import { advanceJourneyProgress, sequenceFrame, signalStyles } from "@/lib/journey-sequence";
 import styles from "./journey.module.css";
 
-const NeuralScene = dynamic(() => import("./NeuralScene"), { ssr: false, loading: () => <div className={styles.sceneLoading} role="status"><ScanLine size={30}/><span>Connecting the dataspace…</span></div> });
+const NeuralScene = dynamic(() => import("./NeuralScene"), { ssr: false, loading: () => <div className={styles.sceneLoading} role="status"><ScanLine size={30}/><span>Opening the dataspace architecture…</span></div> });
 const SimpleScene = dynamic(() => import("./NeuralScene").then(module => module.SimpleScene), { ssr: false });
 const questionCount = chapters.filter(chapter => chapter.question).length;
 
@@ -43,7 +43,6 @@ export function DataJourney() {
   }, []);
 
   const liveProgress = useRef({ key: sequenceKey, progress: 0 });
-  // One clock; a new key immediately presents frame zero, including before effects run.
   useEffect(() => {
     if (liveProgress.current.key !== sequenceKey) liveProgress.current = { key: sequenceKey, progress: 0 };
     let last = performance.now();
@@ -62,7 +61,6 @@ export function DataJourney() {
       }
       timer = requestAnimationFrame(tick);
     };
-    // Prevent time spent in a hidden tab being counted on its first visible frame.
     const visibility = () => { last = performance.now(); };
     document.addEventListener("visibilitychange", visibility);
     timer = requestAnimationFrame(tick);
@@ -79,6 +77,10 @@ export function DataJourney() {
   function restart() { dispatch({ type: "reset" }); setPaused(false); setSelected(null); }
   const sceneProps = { chapter: state.chapter, progress, fault: state.fault, paused: paused || state.complete, reduced: motionReduced, selected, onSelect: (id: NodeId) => setSelected(current => current === id ? null : id) };
   const Scene = simple ? SimpleScene : NeuralScene;
+  const sequenceNote = state.chapter === 3 ? "Credential verification and access-policy filtering happen inside the catalogue interaction itself."
+    : state.chapter === 4 ? "Company B is choosing an offer here; provider-side usage-policy enforcement happens during contract negotiation."
+    : state.chapter === 5 ? "Access policy already controlled catalogue visibility. Usage/contract policy is evaluated here during negotiation."
+    : null;
 
   return <main className={styles.page} lang="en">
     {!cinema && <LearnerNav active="journey" eyebrow="Experience the exchange"/>}
@@ -95,17 +97,17 @@ export function DataJourney() {
       </header>
 
       <div className={styles.experience}>
-        <section className={styles.stage} aria-label="Data exchange visualization" data-reduced={motionReduced} style={{ "--phase-color": state.fault ? "#ff8ea3" : journeyNodes[chapter.focus].color } as React.CSSProperties}>
-          <div className={styles.stageTop}><span className={styles.stageTag}><span className={styles.liveDot}/> {state.fault ? "EXCHANGE BLOCKED" : "NEURAL DATASPACE"}</span><span className={styles.simulationBadge}>Conceptual simulation</span></div>
+        <section className={styles.stage} aria-label="Tractus-X data exchange visualization" data-reduced={motionReduced} style={{ "--phase-color": state.fault ? "#ff8ea3" : journeyNodes[chapter.focus].color } as React.CSSProperties}>
+          <div className={styles.stageTop}><span className={styles.stageTag}><span className={styles.liveDot}/> {state.fault ? "EXCHANGE BLOCKED" : "FEDERATED DATASPACE"}</span><span className={styles.simulationBadge}>Conceptual Tractus-X flow</span></div>
           <Scene {...sceneProps}/>
           <div className={styles.signalReadout} style={{ "--signal-color": state.fault ? "#ff8ea3" : signal.color } as React.CSSProperties}>
             <span className={styles.signalNumber}>{String(sequence.beats.indexOf(sequence.current) + 1).padStart(2, "0")}</span>
             <div aria-live="polite" aria-atomic="true"><span>{state.fault ? "FAILURE SNAPSHOT" : sequence.finished ? moment.result : signal.label}</span><strong>{state.fault ? faults[state.fault].title : sequence.current.title}</strong><small>{sequence.current.from && sequence.current.to ? `${journeyNodes[sequence.current.from].label} → ${journeyNodes[sequence.current.to].label}` : `At ${journeyNodes[sequence.current.focus].label}`}</small></div>
             {sequence.finished && <Check size={21} className={styles.signalCheck}/>}
           </div>
-          <div className={styles.sceneCaption} aria-live="polite" key={state.chapter}><span>{String(state.chapter + 1).padStart(2, "0")} / {String(chapters.length).padStart(2, "0")} · {chapter.signal}</span><h2>{state.fault ? faults[state.fault].title : moment.title}</h2><small>{state.fault ? "Repair the connection to continue" : moment.detail}</small></div>
-          <div className={styles.legend}><span><i style={{ background: "#d0b3ff" }}/>Local action</span><span><i style={{ background: "#80caff" }}/>Control plane</span><span><i style={{ background: "#f5d786" }}/>Contract</span><span><i style={{ background: "#59edcf" }}/>Data plane</span></div>
-          {state.complete && <div className={styles.completion} role="status"><div className={styles.completeSeal}><ShieldCheck size={38}/></div><p className={styles.eyebrow}>CONNECTION COMPLETE</p><h2>Understanding,<br/>transferred.</h2><p>You followed a record from its source to its purpose.</p><p>{state.answered.length}/{questionCount} understanding checks passed · {state.attempts} attempts</p><div className={styles.completeActions}><button onClick={restart}><RotateCcw size={16}/> Replay journey</button><Link href="/scenarios">Explore more scenarios <ArrowRight size={16}/></Link></div></div>}
+          <div className={styles.sceneCaption} aria-live="polite" key={state.chapter}><span>{String(state.chapter + 1).padStart(2, "0")} / {String(chapters.length).padStart(2, "0")} · {chapter.signal}</span><h2>{state.fault ? faults[state.fault].title : moment.title}</h2><small>{state.fault ? "Repair the exchange to continue" : moment.detail}</small></div>
+          <div className={styles.legend}><span><i style={{ background: "#d0b3ff" }}/>Local</span><span><i style={{ background: "#80caff" }}/>DSP / control</span><span><i style={{ background: "#f5d786" }}/>Agreement</span><span><i style={{ background: "#59edcf" }}/>Payload / data</span></div>
+          {state.complete && <div className={styles.completion} role="status"><div className={styles.completeSeal}><ShieldCheck size={38}/></div><p className={styles.eyebrow}>CONNECTION COMPLETE</p><h2>Understanding,<br/>transferred.</h2><p>You followed a record from its private source through governed access to business use.</p><p>{state.answered.length}/{questionCount} understanding checks passed · {state.attempts} attempts</p><div className={styles.completeActions}><button onClick={restart}><RotateCcw size={16}/> Replay journey</button><Link href="/scenarios">Explore more scenarios <ArrowRight size={16}/></Link></div></div>}
         </section>
 
         <aside className={styles.guide} aria-label="Journey guide">
@@ -119,7 +121,7 @@ export function DataJourney() {
               <span className={styles.beatNumber}>{beat.status === "done" ? <Check size={12}/> : beat.status === "blocked" ? <X size={12}/> : String(index + 1).padStart(2, "0")}</span><span>{beat.title}</span>
             </li>)}</ol>
             <p className={styles.beatDetail} aria-live="polite">{state.fault ? "Snapshot at the failed check. Later actions have not happened. Repair to replay the sequence." : sequence.current.detail}</p>
-            {(state.chapter === 3 || state.chapter === 4) && <p className={styles.sequenceNote}>A closer look at checks used during catalogue and negotiation interactions, not extra standalone protocol rounds.</p>}
+            {sequenceNote && <p className={styles.sequenceNote}>{sequenceNote}</p>}
           </section>
           <div className={styles.takeaway}><Sparkles size={17}/><p>{chapter.takeaway}</p></div>
           {depth === "developer" && <details className={styles.message}><summary>Inspect example message</summary><p>Illustrative fields only. Not a live API response or a complete DSP payload.</p><pre>{JSON.stringify(chapter.message, null, 2)}</pre></details>}
@@ -140,7 +142,7 @@ export function DataJourney() {
 
       <nav className={styles.timeline} aria-label="Journey chapters">{chapters.map((item, index) => <button key={item.id} aria-current={state.chapter === index ? "step" : undefined} onClick={() => navigate(index)}><span className={styles.timelineNumber}>{state.answered.includes(index) ? <Check size={15}/> : String(index + 1).padStart(2, "0")}</span><span>{item.label}</span><i/></button>)}</nav>
 
-      <footer className={styles.bottomBar}><details className={styles.faultMenu}><summary><GitBranch size={16}/> What if something goes wrong?</summary><div>{(Object.keys(faults) as Fault[]).map(id => <button key={id} onClick={() => { dispatch({ type: "fault", fault: id }); setSelected(null); }}>{faults[id].title}<ArrowRight size={14}/></button>)}</div></details><p>Fictional companies & data · English experience · No real transfer</p></footer>
+      <footer className={styles.bottomBar}><details className={styles.faultMenu}><summary><GitBranch size={16}/> What if something goes wrong?</summary><div>{(Object.keys(faults) as Fault[]).map(id => <button key={id} onClick={() => { dispatch({ type: "fault", fault: id }); setSelected(null); }}>{faults[id].title}<ArrowRight size={14}/></button>)}</div></details><p>Fictional companies & data · Tractus-X / DSP teaching model · No real transfer</p></footer>
     </div>
   </main>;
 }
