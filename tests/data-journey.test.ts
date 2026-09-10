@@ -48,15 +48,16 @@ test("watch mode can complete without fabricating passed checks", () => {
   assert.equal(state.answered.length, 0);
 });
 
-test("a full guided journey completes with all five checks", () => {
+test("a full guided journey completes with every configured check", () => {
   let state = initialJourney;
+  const questionCount = chapters.filter(chapter => chapter.question).length;
   for (const chapter of chapters) {
     if (chapter.question) state = journeyReducer(state, { type: "answer", choice: chapter.question.answer });
     state = journeyReducer(state, { type: "next", guided: true });
   }
   assert.equal(state.complete, true);
-  assert.equal(state.answered.length, 5);
-  assert.equal(state.attempts, 5);
+  assert.equal(state.answered.length, questionCount);
+  assert.equal(state.attempts, questionCount);
   const reset = journeyReducer(state, { type: "reset" });
   assert.deepEqual(reset.answered, []);
   assert.equal(reset.chapter, 0);
