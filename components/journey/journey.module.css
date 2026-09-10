@@ -27,12 +27,21 @@
 .canvas canvas { display:block; width:100%; height:100%; }
 .nodeLabel { position:absolute; z-index:3; transform:translate(-50%,0); display:flex; flex-direction:column; align-items:center; white-space:nowrap; background:#081223de; color:#c1cfe2; border:1px solid transparent; padding:5px 9px; border-radius:7px; font-size:.875rem; }
 .nodeLabel small { color:#92a4be; font-size:.75rem; margin-top:3px; }
+.nodeLabel small { display:none; }
+.nodeLabel[data-active=true] small,.nodeLabel:hover small,.nodeLabel:focus-visible small { display:block; }
+.nodeLabel:not([data-active=true]) { background:transparent; border-color:transparent; color:#91a7c3; }
+.nodeLabel:focus-visible { z-index:4; }
 .nodeLabel[data-active=true] { color:var(--node-color); border-color:var(--node-color); background:#101e30e8; }
 .nodeLabel:hover { background:#1a2941; }
 .sceneCaption { position:absolute; bottom:61px; left:30px; right:30px; text-align:center; pointer-events:none; }
 .sceneCaption>span { font-size:.75rem; letter-spacing:.14em; color:#7f9bae; }
 .sceneCaption p { font-size:.875rem; font-weight:600; letter-spacing:.15em; color:#c1d5e6; margin:8px 0; }
 .sceneCaption small { font-size:.75rem; color:#93a5bd; }
+.sceneCaption h2 { font-size:clamp(1.3rem,2.3vw,2rem); font-weight:500; letter-spacing:-.045em; line-height:1.2; margin:10px 0 9px; color:#edf7ff; text-wrap:balance; }
+.sceneCaption>span { color:var(--phase-color); letter-spacing:.09em; }
+.sceneCaption small { font-size:.875rem; color:#a5b8d1; }
+.milestone { position:absolute; z-index:4; top:70px; right:25px; display:flex; align-items:center; gap:8px; padding:9px 12px; border:1px solid var(--phase-color); color:var(--phase-color); background:#081626ed; border-radius:30px; font-size:.75rem; letter-spacing:.08em; animation:appear .45s ease both; pointer-events:none; }
+.stage[data-reduced=true] .milestone { animation:none; }
 .legend { position:absolute; inset:auto 15px 20px; display:flex; justify-content:center; gap:20px; flex-wrap:wrap; color:#a2b3cc; font-size:.75rem; }
 .legend span { display:flex; align-items:center; gap:7px; }
 .legend i { height:3px; width:13px; border-radius:2px; }
@@ -122,3 +131,30 @@
 @media(max-width:850px) { .experience { grid-template-columns:1fr; } .stage { min-height:530px; } .guide { display:block; padding:25px; } .chapterCopy h2 { font-size:2rem; } .guideFooter { padding-top:22px; } .choices { grid-template-columns:repeat(3,minmax(0,1fr)); } .choices button { align-items:flex-start; } .guideFooter>span { text-align:left; } .timeline { grid-template-columns:repeat(4,minmax(0,1fr)); } .transport { gap:16px; } .bottomBar { flex-direction:column; } .cinema .stage { min-height:60vh; } }
 @media(max-width:550px) { .workspace { padding:18px 10px; } .heading { flex-wrap:wrap; gap:17px; padding:0 4px; } .titleRow .eyebrow { font-size:.75rem; letter-spacing:.08em; } .heading h1 { font-size:1.65rem; } .topControls { width:100%; justify-content:space-between; } .experience { border-radius:14px; } .stage { min-height:505px; } .canvas { inset:68px 0 115px; } .stageTop { inset:17px 16px auto; } .stageTag { font-size:.75rem; letter-spacing:.05em; } .simulationBadge { font-size:.75rem; } .nodeLabel { font-size:.75rem; padding:3px 5px; } .nodeLabel small { display:none; } .sceneCaption { bottom:76px; left:10px; right:10px; } .sceneCaption p { font-size:.75rem; letter-spacing:.1em; } .legend { bottom:20px; column-gap:14px; row-gap:8px; } .guide { padding:22px 18px; } .choices { grid-template-columns:1fr; } .chapterCopy h2 { font-size:1.9rem; } .playProgress { min-width:65px; max-width:100px; } .renderControls { width:100%; justify-content:space-between; padding-top:4px; } .transport { column-gap:8px; } .speed { margin-left:0; flex-direction:column; gap:0; } .speed select { padding:2px; } .timeline { gap:5px; } .timeline button { padding:9px 8px 14px; font-size:.875rem; } .simpleScene { padding:100px 10px 170px; } .simpleNote { font-size:.75rem; } }
 @media(prefers-reduced-motion:reduce) { .workspace * { animation:none !important; transition:none !important; } }
+
+/* Keep a stable stage: long explanations must not stretch the camera viewport. */
+.experience { align-items:start; background:#0d1727; }
+.stage { min-height:620px; height:clamp(620px,75svh,820px); }
+.canvas { inset:58px 0 153px; }
+.sceneCaption { bottom:60px; }
+.cinema .stage { min-height:620px; height:calc(100svh - 205px); }
+.guide { min-height:620px; border-left:1px solid var(--line); }
+.simpleScene { display:flex; flex-direction:column; height:100%; padding:90px 20px 165px; }
+.simpleScene svg { flex:1; min-height:0; max-height:none; }
+.simpleNodes { flex-shrink:0; }
+.simpleNote { flex-shrink:0; margin:0 0 10px; }
+@media(max-width:850px) {
+  .stage,.cinema .stage { min-height:560px; height:560px; }
+  .guide { min-height:0; border-left:0; border-top:1px solid var(--line); }
+}
+@media(max-width:550px) {
+  .stage,.cinema .stage { min-height:540px; height:540px; }
+  .canvas { inset:86px 0 167px; }
+  .nodeLabel { font-size:.875rem; }
+  .nodeLabel small,.nodeLabel[data-active=true] small,.nodeLabel:hover small,.nodeLabel:focus-visible small { display:none; }
+  .sceneCaption { bottom:72px; }
+  .sceneCaption>span { font-size:.75rem; letter-spacing:.035em; }
+  .sceneCaption small { font-size:.875rem; }
+  .milestone { top:57px; right:14px; padding:6px 10px; font-size:.75rem; }
+  .simpleScene { padding:90px 12px 185px; }
+}

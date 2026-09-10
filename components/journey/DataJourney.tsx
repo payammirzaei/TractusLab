@@ -6,6 +6,7 @@ import { useEffect, useReducer, useRef, useState } from "react";
 import { ArrowRight, Check, ChevronLeft, CircleHelp, Expand, GitBranch, Pause, Play, RotateCcw, ScanLine, ShieldCheck, Sparkles, X, Zap } from "lucide-react";
 import { LearnerNav } from "@/components/LearnerNav";
 import { chapters, faults, initialJourney, journeyNodes, journeyReducer, type Depth, type Fault, type NodeId } from "@/lib/data-journey";
+import { journeyMoments } from "@/lib/journey-visuals";
 import styles from "./journey.module.css";
 
 const NeuralScene = dynamic(() => import("./NeuralScene"), { ssr: false, loading: () => <div className={styles.sceneLoading} role="status"><ScanLine size={30}/><span>Connecting the dataspace…</span></div> });
@@ -26,6 +27,7 @@ export function DataJourney() {
   const [progress, setProgress] = useState(0);
   const elapsedTime = useRef(0);
   const chapter = chapters[state.chapter];
+  const moment = journeyMoments[state.chapter];
   const answered = state.answered.includes(state.chapter);
   const needsAnswer = guided && !!chapter.question && !answered;
   const motionReduced = reduced || systemReduced;
@@ -79,10 +81,11 @@ export function DataJourney() {
       </header>
 
       <div className={styles.experience}>
-        <section className={styles.stage} aria-label="Data exchange visualization">
+        <section className={styles.stage} aria-label="Data exchange visualization" data-reduced={motionReduced} style={{ "--phase-color": state.fault ? "#ff8ea3" : journeyNodes[chapter.focus].color } as React.CSSProperties}>
           <div className={styles.stageTop}><span className={styles.stageTag}><span className={styles.liveDot}/> {state.fault ? "EXCHANGE BLOCKED" : "NEURAL DATASPACE"}</span><span className={styles.simulationBadge}>Conceptual simulation</span></div>
           <Scene {...sceneProps}/>
-          <div className={styles.sceneCaption} aria-live="polite"><span>{String(state.chapter + 1).padStart(2, "0")} / {String(chapters.length).padStart(2, "0")}</span><p>{state.fault ? faults[state.fault].title : chapter.signal}</p><small>{state.fault ? "Repair the connection to continue" : "Select a node to see what it does"}</small></div>
+          {!state.fault && progress >= .76 && !state.complete && <div key={`${state.chapter}-${state.replay}`} className={styles.milestone}><Check size={14}/>{moment.result}</div>}
+          <div className={styles.sceneCaption} aria-live="polite" key={state.chapter}><span>{String(state.chapter + 1).padStart(2, "0")} / {String(chapters.length).padStart(2, "0")} · {chapter.signal}</span><h2>{state.fault ? faults[state.fault].title : moment.title}</h2><small>{state.fault ? "Repair the connection to continue" : moment.detail}</small></div>
           <div className={styles.legend}><span><i style={{ background: "#79bfff" }}/>Offer & identity</span><span><i style={{ background: "#f5d786" }}/>Terms & agreement</span><span><i style={{ background: "#59edcf" }}/>Actual data</span></div>
           {state.complete && <div className={styles.completion} role="status"><div className={styles.completeSeal}><ShieldCheck size={38}/></div><p className={styles.eyebrow}>CONNECTION COMPLETE</p><h2>Understanding,<br/>transferred.</h2><p>You followed a record from its source to its purpose.</p><p>{state.answered.length}/{questionCount} understanding checks passed · {state.attempts} attempts</p><div className={styles.completeActions}><button onClick={restart}><RotateCcw size={16}/> Replay journey</button><Link href="/scenarios">Explore more scenarios <ArrowRight size={16}/></Link></div></div>}
         </section>

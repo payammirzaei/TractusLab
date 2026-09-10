@@ -3,11 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { chapters, journeyNodes, type Fault, type NodeId } from "@/lib/data-journey";
+import { journeyLayout } from "@/lib/journey-visuals";
 import styles from "./journey.module.css";
 
 export type SceneProps = { chapter: number; fault: Fault | null; paused: boolean; speed: number; reduced: boolean; replay: number; selected: NodeId | null; onSelect: (id: NodeId) => void };
 const nodeIds = Object.keys(journeyNodes) as NodeId[];
-const vec = (id: NodeId) => new THREE.Vector3(...journeyNodes[id].position);
 const smooth = (n: number) => { const v = THREE.MathUtils.clamp(n, 0, 1); return v * v * (3 - 2 * v); };
 
 /** Seeded positions keep the neural topology stable across renders and devices. */
@@ -32,10 +32,12 @@ export default function NeuralScene(props: SceneProps) {
     element.prepend(renderer.domElement);
     renderer.domElement.setAttribute("aria-hidden", "true");
     const scene = new THREE.Scene();
+    let layout = journeyLayout(1);
+    const vec = (id: NodeId) => new THREE.Vector3(...layout.positions[id]);
     const camera = new THREE.PerspectiveCamera(40, 1, .1, 100);
     camera.position.set(0, 1, 23);
     const targetCamera = camera.position.clone();
-    const lookAt = new THREE.Vector3(0, .2, 0);
+    const lookAt = new THREE.Vector3(0, 0, 0);
     let width = 1, height = 1;
     const geometries = new Set<THREE.BufferGeometry>();
     const materials = new Set<THREE.Material>();
@@ -73,14 +75,19 @@ export default function NeuralScene(props: SceneProps) {
       const group = new THREE.Group(); group.position.copy(vec(id as NodeId));
       const rand = random(204 + index);
       const points: THREE.Vector3[] = [new THREE.Vector3(0, 0, 0)];
-      for (let i = 0; i < 105; i++) {
-        const theta = rand() * Math.PI * 2, phi = Math.acos(2 * rand() - 1), radius = .55 + Math.pow(rand(), .45) * 1.7;
-        points.push(new THREE.Vector3(Math.cos(theta) * Math.sin(phi) * radius, Math.sin(theta) * Math.sin(phi) * radius * .82, Math.cos(phi) * radius * .7));
+      for (let i = 0; i < 42; i++) {
+        // Even angular spacing prevents accidental dense clumps inside the cluster.
+        const theta = i * 2.399963, phi = Math.acos(1 - 2 * (i + .5) / 42), radius = 1.15 + rand() * .55;
+        points.push(new THREE.Vector3(Math.cos(theta) * Math.sin(phi) * radius, Math.sin(theta) * Math.sin(phi) * radius * .85, Math.cos(phi) * radius * .65));
       }
       const edges: number[] = [];
+      const seenEdges = new Set<string>();
       points.forEach((p, i) => {
-        const nearest = points.map((q, j) => ({ j, d: p.distanceTo(q) })).filter(x => x.j !== i).sort((a, b) => a.d - b.d).slice(0, 3);
-        nearest.forEach(({ j }) => edges.push(...p.toArray(), ...points[j].toArray()));
+        const nearest = points.map((q, j) => ({ j, d: p.distanceTo(q) })).filter(x => x.j !== i).sort((a, b) => a.d - b.d).slice(0, 2);
+        nearest.forEach(({ j }) => {
+          const key = `${Math.min(i, j)}:${Math.max(i, j)}`;
+          if (!seenEdges.has(key)) { seenEdges.add(key); edges.push(...p.toArray(), ...points[j].toArray()); }
+        });
       });
       const edgeGeometry = geometry(new THREE.BufferGeometry()); edgeGeometry.setAttribute("position", new THREE.Float32BufferAttribute(edges, 3));
       const edgeMaterial = material(new THREE.LineBasicMaterial({ color: index ? "#8c83ef" : "#3ca995", transparent: true, opacity: .3 }));
@@ -92,7 +99,7 @@ export default function NeuralScene(props: SceneProps) {
       scene.add(group); return { group, edgeMaterial, particles };
     });
 
-    type Path = { from: NodeId; to: NodeId; stages: number[]; curve: THREE.CubicBezierCurve3; line: THREE.Line; pulse: THREE.Points<THREE.BufferGeometry, THREE.ShaderMaterial>; transfer: boolean };
+    type Path = { from: NodeId; to: NodeId; stages: number[]; bend: number; color: string; curve: THREE.CubicBezierCurve3; line: THREE.Line; pulse: THREE.Points<THREE.BufferGeometry, THREE.ShaderMaterial>; transfer: boolean };
     const paths: Path[] = [];
     function path(from: NodeId, to: NodeId, stages: number[], color: string, bend: number, transfer = false) {
       const a = vec(from), b = vec(to);
@@ -100,7 +107,8 @@ export default function NeuralScene(props: SceneProps) {
       const g = geometry(new THREE.BufferGeometry().setFromPoints(curve.getPoints(100)));
       const line = new THREE.Line(g, material(new THREE.LineBasicMaterial({ color, transparent: true, opacity: .2 })));
       const pulse = glow(color, transfer ? 6 : 4, new Array(36).fill(0));
-      scene.add(line, pulse); paths.push({ from, to, stages, curve, line, pulse, transfer });
+      pulse.frustumCulled = false;
+      scene.add(line, pulse); paths.push({ from, to, stages, bend, color, curve, line, pulse, transfer });
     }
     path("provider", "catalog", [1], "#79bfff", .4);
     path("consumer", "catalog", [2], "#79bfff", 1.2);
@@ -121,6 +129,10 @@ export default function NeuralScene(props: SceneProps) {
     const original = mesh(new THREE.OctahedronGeometry(.22, 0), "#81ffda"); original.position.copy(vec("provider")).add(new THREE.Vector3(0, -.9, .7)); scene.add(original);
     const copy = mesh(new THREE.OctahedronGeometry(.22, 0), "#81ffda"); scene.add(copy);
     const copyHalo = glow("#81ffda", 8, [0, 0, 0]); copy.add(copyHalo);
+    const wake = glow("#81ffda", 3.5, new Array(54).fill(0)); wake.frustumCulled = false; scene.add(wake);
+    // One expanding confirmation ripple makes each successful handshake memorable.
+    const ripple = mesh(new THREE.TorusGeometry(.7, .018, 6, 80), "#75dbff"); scene.add(ripple);
+    const sealOrbit = mesh(new THREE.TorusGeometry(.85, .018, 6, 80), "#f5d786"); scene.add(sealOrbit);
     const ruleGeometry = geometry(new THREE.OctahedronGeometry(.1));
     const rules = Array.from({ length: 3 }, () => {
       const rule = new THREE.Mesh(ruleGeometry, material(new THREE.MeshBasicMaterial({ color: "#ffba77" }))); scene.add(rule); return rule;
@@ -131,6 +143,23 @@ export default function NeuralScene(props: SceneProps) {
     const resize = new ResizeObserver(() => {
       width = Math.max(element.clientWidth, 1); height = Math.max(element.clientHeight, 1);
       renderer.setSize(width, height); camera.aspect = width / height; camera.updateProjectionMatrix();
+      layout = journeyLayout(camera.aspect);
+      nodes.forEach(node => node.group.position.copy(vec(node.id)));
+      companyNetworks.forEach((network, i) => network.group.position.copy(vec(i ? "consumer" : "provider")));
+      paths.forEach(path => {
+        const a = vec(path.from), b = vec(path.to);
+        path.curve.v0.copy(a); path.curve.v3.copy(b);
+        path.curve.v1.copy(a).lerp(b, .33).add(new THREE.Vector3(0, path.bend, .8));
+        path.curve.v2.copy(a).lerp(b, .67).add(new THREE.Vector3(0, path.bend, .8));
+        const positions = path.line.geometry.getAttribute("position") as THREE.BufferAttribute;
+        const point = new THREE.Vector3();
+        for (let i = 0; i <= 100; i++) { path.curve.getPoint(i / 100, point); positions.setXYZ(i, point.x, point.y, point.z); }
+        positions.needsUpdate = true; path.line.geometry.computeBoundingSphere();
+      });
+      seal.position.copy(vec("agreement")); sealOrbit.position.copy(vec("agreement"));
+      original.position.copy(vec("provider")).add(new THREE.Vector3(0, -.85, .7));
+      // Fit immediately on resize. Only chapter-focus motion is interpolated.
+      camera.position.set(0, 0, layout.distance);
     }); resize.observe(element);
     let frame = 0, last = performance.now(), time = 0, elapsed = 0, previousReplay = -1, previousChapter = -1, lastRender = 0;
     let disposed = false;
@@ -152,14 +181,14 @@ export default function NeuralScene(props: SceneProps) {
       const progress = p.reduced ? 1 : smooth(elapsed / 5);
       const sceneFocus = p.selected ?? chapters[p.chapter].focus;
       const mobile = width < 640;
-      const distance = Math.max(21, 16 / Math.max(camera.aspect, .4));
-      targetCamera.set(mobile || p.reduced ? 0 : vec(sceneFocus).x * .15, p.reduced ? 0 : .4 + Math.sin(t * .09) * .25, distance);
+      targetCamera.set(mobile || p.reduced ? 0 : vec(sceneFocus).x * .035, 0, layout.distance);
       camera.position.lerp(targetCamera, p.reduced ? 1 : .05); camera.lookAt(lookAt);
       companyNetworks.forEach(({ group, edgeMaterial, particles }, i) => {
         group.rotation.y = Math.sin(t * .07 + i) * .13;
         const activated = i === 0 || p.chapter === 7;
-        edgeMaterial.opacity = activated ? .35 + Math.sin(t * .9) * .07 : .15;
-        particles.material.uniforms.opacity.value = activated ? .9 : .4;
+        const inBackground = p.chapter > 0 && p.chapter < 7;
+        edgeMaterial.opacity = activated ? (inBackground ? .15 : .25) + Math.sin(t * .9) * .025 : .09;
+        particles.material.uniforms.opacity.value = activated ? (inBackground ? .5 : .8) : .28;
         group.scale.setScalar(activated ? 1 + Math.sin(t * .7) * .015 : 1);
       });
       nodes.forEach(({ id, group, core, halo, rings }) => {
@@ -168,10 +197,11 @@ export default function NeuralScene(props: SceneProps) {
         const blocked = !!p.fault && ((p.fault === "identity" && id === "identity") || (p.fault === "policy" && id === "policy") || (p.fault === "offline" && id === "consumer"));
         const color = blocked ? red : new THREE.Color(journeyNodes[id].color);
         core.material.color.copy(color); halo.material.uniforms.tint.value.copy(color);
-        halo.material.uniforms.opacity.value = active ? 1 : .5;
+        halo.material.uniforms.opacity.value = active ? 1 : .23;
+        core.material.transparent = true; core.material.opacity = active || isGateway ? 1 : .45;
         core.rotation.y = t * .35;
         rings.forEach((ring, i) => {
-          ring.material.color.copy(color); ring.material.opacity = active ? .8 : .25;
+          ring.material.color.copy(color); ring.material.opacity = active ? .8 : .13;
           // Identity rings converge on a shared orientation; policy rings align after evaluation.
           const align = ((id === "identity" || isGateway) && p.chapter === 3) || (id === "policy" && p.chapter === 4);
           const alignment = align && !p.fault ? progress : 0;
@@ -180,23 +210,27 @@ export default function NeuralScene(props: SceneProps) {
           ring.rotation.z = t * .12;
           ring.scale.setScalar((1 + i * .24) * (active ? 1.12 : 1));
         });
-        projected.copy(group.position).add(new THREE.Vector3(0, id === "provider" || id === "consumer" ? -2.15 : -.85, 0)).project(camera);
+        projected.copy(group.position).add(new THREE.Vector3(0, isGateway ? -1.95 : -1.05, 0)).project(camera);
         const label = labels.current[id];
-        if (label) { label.style.left = `${(projected.x * .5 + .5) * width}px`; label.style.top = `${(-projected.y * .5 + .5) * height}px`; }
+        if (label) {
+          const halfLabel = label.offsetWidth / 2 + 8;
+          label.style.left = `${THREE.MathUtils.clamp((projected.x * .5 + .5) * width, halfLabel, width - halfLabel)}px`;
+          label.style.top = `${THREE.MathUtils.clamp((-projected.y * .5 + .5) * height, 0, height - label.offsetHeight)}px`;
+        }
       });
       paths.forEach(path => {
         const active = path.stages.includes(p.chapter);
         const blocked = active && !!p.fault;
         path.line.visible = active || (p.chapter > 1 && path.from === "provider" && path.to === "catalog");
         const lineMat = path.line.material as THREE.LineBasicMaterial;
-        lineMat.color.set(blocked ? "#ff7185" : path.transfer ? "#59edcf" : journeyNodes[path.to].color);
-        lineMat.opacity = active ? .36 : .08;
+        lineMat.color.set(blocked ? "#ff7185" : path.color);
+        lineMat.opacity = active ? .6 : .05;
         path.line.geometry.setDrawRange(0, Math.floor(101 * (blocked ? .48 : progress)));
         path.pulse.visible = active && !p.reduced;
         path.pulse.material.uniforms.tint.value.copy(lineMat.color);
         const position = path.pulse.geometry.getAttribute("position") as THREE.BufferAttribute;
         for (let i = 0; i < 12; i++) {
-          let u = ((t * (path.transfer ? .18 : .24) - i * .009) % 1 + 1) % 1;
+          let u = ((elapsed * (path.transfer ? .11 : .19) - i * .014) % 1 + 1) % 1;
           if (blocked) u *= .45;
           path.curve.getPoint(u * progress, point); position.setXYZ(i, point.x, point.y, point.z);
         }
@@ -205,6 +239,14 @@ export default function NeuralScene(props: SceneProps) {
       seal.visible = p.chapter >= 5;
       seal.scale.setScalar(p.chapter === 5 ? .05 + progress * 1.25 : .8);
       seal.rotation.set(t * .17, t * .32, .3);
+      sealOrbit.visible = p.chapter >= 5;
+      sealOrbit.scale.setScalar(.4 + progress * .8); sealOrbit.rotation.set(.5, t * .2, t * .12);
+      const milestone = p.chapter === 6 ? 10 : 5;
+      const rippleProgress = (elapsed - milestone) / 2.5;
+      ripple.visible = !p.reduced && !p.fault && [3, 4, 5, 6, 7].includes(p.chapter) && rippleProgress >= 0 && rippleProgress <= 1;
+      ripple.position.copy(vec(chapters[p.chapter].focus)); ripple.scale.setScalar(1 + Math.max(0, rippleProgress) * 2.8);
+      ripple.material.color.set(journeyNodes[chapters[p.chapter].focus].color);
+      ripple.material.opacity = .75 * (1 - Math.max(0, rippleProgress));
       original.rotation.set(t * .25, t * .5, .2);
       original.scale.setScalar(p.chapter === 0 ? .1 + progress * .9 : 1);
       rules.forEach((rule, i) => {
@@ -217,6 +259,13 @@ export default function NeuralScene(props: SceneProps) {
       if (p.chapter === 7) copy.position.copy(vec("consumer")).add(new THREE.Vector3(0, -.9, .7));
       else transferPath.curve.getPoint(p.reduced ? .7 : smooth((elapsed - 1) / 9), copy.position);
       copy.rotation.copy(original.rotation);
+      wake.visible = p.chapter === 6 && !p.fault && !p.reduced && elapsed < 11;
+      const wakePosition = wake.geometry.getAttribute("position") as THREE.BufferAttribute;
+      for (let i = 0; i < 18; i++) {
+        transferPath.curve.getPoint(smooth((elapsed - 1 - i * .065) / 9), point);
+        wakePosition.setXYZ(i, point.x, point.y, point.z);
+      }
+      wakePosition.needsUpdate = true;
       renderer.render(scene, camera);
     }
     frame = requestAnimationFrame(render);
@@ -233,7 +282,7 @@ export default function NeuralScene(props: SceneProps) {
   if (unavailable) return <SimpleScene {...props} />;
   return <div ref={host} className={styles.canvas} role="group" aria-label="Interactive conceptual dataspace. Select a component to learn its role.">
     {nodeIds.map(id => <button key={id} ref={el => { labels.current[id] = el; }} className={styles.nodeLabel} data-active={props.selected === id || chapters[props.chapter].focus === id} style={{ "--node-color": journeyNodes[id].color } as React.CSSProperties} onClick={() => props.onSelect(id)} aria-pressed={props.selected === id}>
-      <span>{journeyNodes[id].label}</span><small>{journeyNodes[id].role}</small>{(id === "provider" || id === "consumer") && <small>EDC gateway</small>}
+      <span>{journeyNodes[id].label}</span><small>{journeyNodes[id].role}</small>
     </button>)}
   </div>;
 }
