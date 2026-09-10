@@ -21,8 +21,8 @@ export function journeyLayout(aspect: number) {
     agreement: [0, controlY, 1.05 * depth],
   };
   const halfWidth = companyX + 2.15 * companyScale;
-  // The old frame reserved more vertical space than the scene ever used. A tighter frustum gives the worlds and artifacts real presence.
-  const halfHeight = 3.1;
+  // Preserve vertical safety on ultra-wide screens; visual enlargement is handled by the presentation layer too.
+  const halfHeight = 3.4;
   const vertical = halfHeight / Math.tan(Math.PI / 9);
   const horizontal = halfWidth / (Math.tan(Math.PI / 9) * safeAspect);
   return { positions, distance: Math.max(vertical, horizontal) + 1.35, companyX, companyScale, controlY, dataY, topY, bottomY };
