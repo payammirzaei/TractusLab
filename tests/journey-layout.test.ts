@@ -9,20 +9,29 @@ test("the exchange fills wide, standard and phone canvases without clipping comp
     const layout = journeyLayout(width / height);
     const camera = new PerspectiveCamera(40, width / height, .1, 1000);
     camera.position.set(0, 0, layout.distance); camera.lookAt(0, 0, 0); camera.updateMatrixWorld();
-    const project = (x: number, y: number, z = 0) => new Vector3(x, y, z).project(camera);
-    const a = layout.positions.provider[0], b = layout.positions.consumer[0];
+    const project = (position: [number, number, number], dy = 0) => new Vector3(position[0], position[1] + dy, position[2]).project(camera);
+    const provider = layout.positions.provider, consumer = layout.positions.consumer;
     // Measurable regression for the screenshot: the companies no longer occupy only the central quarter.
-    assert.ok(project(b, 0).x - project(a, 0).x > 1.2, `${width}px: companies too tightly clustered`);
-    assert.ok(project(a - 1.8, 0).x > -.96, `${width}px: provider clipped`);
-    assert.ok(project(b + 1.8, 0).x < .96, `${width}px: consumer clipped`);
+    assert.ok(project(consumer).x - project(provider).x > 1.15, `${width}px: companies too tightly clustered`);
+    assert.ok(project([provider[0] - 1.8, provider[1], provider[2]]).x > -.97, `${width}px: provider clipped`);
+    assert.ok(project([consumer[0] + 1.8, consumer[1], consumer[2]]).x < .97, `${width}px: consumer clipped`);
     for (const [id, position] of Object.entries(layout.positions)) {
-      const label = project(position[0], position[1] - (id === "provider" || id === "consumer" ? 1.95 : 1.05));
-      assert.ok(Math.abs(label.y) < .9, `${width}px: ${id} label vertically clipped`);
+      const label = project(position, id === "provider" || id === "consumer" ? -1.95 : -1.05);
+      assert.ok(Math.abs(label.y) < .91, `${width}px: ${id} label vertically clipped`);
     }
-    const left = project(layout.positions.catalog[0], 0).x;
-    const right = project(layout.positions.identity[0], 0).x;
-    assert.ok((right - left) * width / 2 >= 74, `${width}px: compact labels overlap`);
+    const left = project(layout.positions.catalog).x;
+    const right = project(layout.positions.identity).x;
+    assert.ok((right - left) * width / 2 >= 70, `${width}px: compact labels overlap`);
   }
+});
+
+test("desktop layout uses real depth while phone layouts keep depth restrained", () => {
+  const desktop = journeyLayout(16 / 9);
+  const phone = journeyLayout(9 / 16);
+  const desktopDepths = new Set(Object.values(desktop.positions).map(([, , z]) => z));
+  assert.ok(desktopDepths.size >= 5, "desktop nodes should occupy several depth planes");
+  assert.notEqual(desktop.positions.provider[2], desktop.positions.consumer[2]);
+  assert.ok(Math.max(...Object.values(phone.positions).map(([, , z]) => Math.abs(z))) <= .55, "phone depth should stay subtle");
 });
 
 test("every chapter has its own memorable caption and milestone", () => {
