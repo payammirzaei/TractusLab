@@ -158,3 +158,47 @@
   .milestone { top:57px; right:14px; padding:6px 10px; font-size:.75rem; }
   .simpleScene { padding:90px 12px 185px; }
 }
+
+/* A quiet network below a prominent, causally ordered signal readout. */
+.stage { min-height:700px; height:clamp(700px,82svh,900px); }
+.stage::before { content:""; position:absolute; inset:0; background-image:radial-gradient(#88aac817 .7px,transparent .7px); background-size:24px 24px; mask-image:linear-gradient(transparent,#000 40%,transparent); pointer-events:none; }
+.canvas { inset:164px 0 153px; }
+.signalReadout { position:absolute; inset:66px 26px auto; z-index:2; display:flex; align-items:center; gap:18px; min-height:83px; padding:15px 19px; border:1px solid #7394c129; border-left:2px solid var(--signal-color); border-radius:3px 14px 14px 3px; background:linear-gradient(100deg,#15273bea,#101b2ad9); box-shadow:0 12px 40px #00000026; pointer-events:none; }
+.signalNumber { display:grid; place-items:center; flex:0 0 43px; height:43px; font-size:1.35rem; font-weight:400; letter-spacing:-.06em; color:var(--signal-color); border:1px solid #96bbdf33; border-radius:50%; font-variant-numeric:tabular-nums; }
+.signalReadout>div { min-width:0; }
+.signalReadout strong { display:block; color:#eaf4ff; font-size:clamp(.95rem,1.5vw,1.2rem); line-height:1.35; font-weight:500; letter-spacing:-.025em; margin:4px 0; text-wrap:balance; }
+.signalReadout div>span { display:block; color:var(--signal-color); font-size:.65rem; font-weight:600; letter-spacing:.12em; text-transform:uppercase; }
+.signalReadout small { display:block; color:#abc1db; font-size:.75rem; }
+.signalCheck { color:#86efd1; margin-left:auto; flex-shrink:0; }
+.sequencePanel { margin-top:23px; padding:17px 15px 0; border:1px solid #647ca32f; border-radius:12px; background:linear-gradient(135deg,#18263b99,#0a142399); }
+.sequenceHeading { display:flex; justify-content:space-between; gap:12px; color:#a1b5cf; font-size:.65rem; letter-spacing:.13em; font-weight:650; }
+.sequencePanel ol { list-style:none; padding:0; margin:15px 0; }
+.sequencePanel li { display:flex; position:relative; align-items:center; gap:11px; padding:8px 0; color:#8295af; font-size:.8rem; line-height:1.5; }
+.sequencePanel li:not(:last-child)::after { content:""; position:absolute; left:11px; top:32px; bottom:-7px; width:1px; background:#30435e; }
+.beatNumber { display:grid; place-items:center; flex:0 0 23px; height:23px; border:1px solid #35465f; border-radius:50%; font-size:.6rem; font-variant-numeric:tabular-nums; background:#101c2f; }
+.sequencePanel li[data-status=active] { color:#e0eeff; }
+.sequencePanel li[data-status=active] .beatNumber { color:#a8ddff; border-color:#86ccff; box-shadow:0 0 18px #65bfff35; background:#213c55; }
+.sequencePanel li[data-status=done] { color:#a1c9c4; }
+.sequencePanel li[data-status=done] .beatNumber { color:#86e3c8; border-color:#417368; background:#19352f; }
+.sequencePanel li[data-status=done]::after { background:#417368; }
+.sequencePanel li[data-status=blocked] { color:#ffc2cf; }
+.sequencePanel li[data-status=blocked] .beatNumber { color:#ff9fb4; border-color:#dc7e94; background:#3e253a; }
+.beatDetail { min-height:72px; border-top:1px solid #718bad26; padding-top:13px; margin:0 0 16px; font-size:.8rem; color:#b6c9df; line-height:1.7; }
+.sequenceNote { font-size:.75rem; line-height:1.65; color:#a8b2ce; padding-top:10px; border-top:1px solid #718bad26; }
+.takeaway { margin-top:17px; }
+.simpleScene { padding-top:166px; }
+.cinema .stage { min-height:700px; }
+@media(max-width:850px) {
+  .stage,.cinema .stage { height:650px; min-height:650px; }
+  .sequencePanel { padding:19px 20px 0; }
+}
+@media(max-width:550px) {
+  .stage,.cinema .stage { height:625px; min-height:625px; }
+  .canvas { inset:163px 0 169px; }
+  .signalReadout { inset:67px 14px auto; padding:12px; gap:11px; min-height:84px; }
+  .signalNumber { flex-basis:32px; height:32px; font-size:1rem; }
+  .signalReadout div>span { font-size:.6rem; letter-spacing:.06em; }
+  .signalReadout strong { font-size:.875rem; }
+  .signalReadout small { font-size:.7rem; }
+  .simpleScene { padding-top:165px; }
+}
