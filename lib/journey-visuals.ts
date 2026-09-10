@@ -17,9 +17,9 @@ export function journeyLayout(aspect: number) {
 
 export const journeyMoments = [
   { title: "One record. A world of possibility.", detail: "The source stays with Company A.", result: "SOURCE READY" },
-  { title: "An invitation, not a download.", detail: "Only the offer travels into the catalogue.", result: "OFFER PUBLISHED" },
+  { title: "An invitation, not a download.", detail: "The offer becomes discoverable. The source stays local.", result: "OFFER PUBLISHED" },
   { title: "A question finds its answer.", detail: "Company B discovers what it can request.", result: "OFFER FOUND" },
-  { title: "Two identities. One trusted connection.", detail: "Watch the gateway rings find the same rhythm.", result: "IDENTITY VERIFIED" },
+  { title: "Evidence first. Trust follows.", detail: "The rings align only after the identity check.", result: "IDENTITY VERIFIED" },
   { title: "The right purpose opens the path.", detail: "Intended use must fit the offered terms.", result: "TERMS COMPATIBLE" },
   { title: "The moment both sides agree.", detail: "The golden seal records the accepted terms.", result: "AGREEMENT FORMED" },
   { title: "Permission becomes movement.", detail: "Follow the copy. Notice the original remains.", result: "COPY DELIVERED" },
