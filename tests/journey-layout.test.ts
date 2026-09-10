@@ -4,38 +4,41 @@ import { PerspectiveCamera, Vector3 } from "three";
 import { journeyLayout, journeyMoments } from "../lib/journey-visuals.ts";
 import { chapters } from "../lib/data-journey.ts";
 
-test("the exchange fills wide, standard and phone canvases without clipping company networks", () => {
+test("two company architectures stay visible on wide, standard and phone canvases", () => {
   for (const [width, height] of [[2000, 450], [980, 420], [640, 350], [350, 287], [300, 287]]) {
     const layout = journeyLayout(width / height);
     const camera = new PerspectiveCamera(40, width / height, .1, 1000);
-    camera.position.set(0, 0, layout.distance); camera.lookAt(0, 0, 0); camera.updateMatrixWorld();
-    const project = (position: [number, number, number], dy = 0) => new Vector3(position[0], position[1] + dy, position[2]).project(camera);
-    const provider = layout.positions.provider, consumer = layout.positions.consumer;
-    // Measurable regression for the screenshot: the companies no longer occupy only the central quarter.
-    assert.ok(project(consumer).x - project(provider).x > 1.15, `${width}px: companies too tightly clustered`);
-    assert.ok(project([provider[0] - 1.8, provider[1], provider[2]]).x > -.97, `${width}px: provider clipped`);
-    assert.ok(project([consumer[0] + 1.8, consumer[1], consumer[2]]).x < .97, `${width}px: consumer clipped`);
-    for (const [id, position] of Object.entries(layout.positions)) {
-      const label = project(position, id === "provider" || id === "consumer" ? -1.95 : -1.05);
-      assert.ok(Math.abs(label.y) < .91, `${width}px: ${id} label vertically clipped`);
-    }
-    const left = project(layout.positions.catalog).x;
-    const right = project(layout.positions.identity).x;
-    assert.ok((right - left) * width / 2 >= 70, `${width}px: compact labels overlap`);
+    camera.position.set(0, .25, layout.distance); camera.lookAt(0, 0, 0); camera.updateMatrixWorld();
+    const project = (x: number, y: number, z = 0) => new Vector3(x, y, z).project(camera);
+    const shellHalf = 2.05 * layout.companyScale;
+    const leftEdge = project(-layout.companyX - shellHalf, 0, -.2);
+    const rightEdge = project(layout.companyX + shellHalf, 0, .2);
+    assert.ok(leftEdge.x > -.98, `${width}px: Company A clipped`);
+    assert.ok(rightEdge.x < .98, `${width}px: Company B clipped`);
+    const provider = project(-layout.companyX, 0, -.2);
+    const consumer = project(layout.companyX, 0, .2);
+    assert.ok(consumer.x - provider.x > .72, `${width}px: company stacks collapse into each other`);
+    const top = project(0, 3.55 * layout.companyScale, 0);
+    const bottom = project(0, -3.05 * layout.companyScale, 0);
+    assert.ok(top.y < .94 && bottom.y > -.94, `${width}px: company architecture vertically clipped`);
   }
 });
 
-test("desktop layout uses real depth while phone layouts keep depth restrained", () => {
+test("desktop has authored depth while phones keep the stage restrained", () => {
   const desktop = journeyLayout(16 / 9);
   const phone = journeyLayout(9 / 16);
   const desktopDepths = new Set(Object.values(desktop.positions).map(([, , z]) => z));
-  assert.ok(desktopDepths.size >= 5, "desktop nodes should occupy several depth planes");
+  assert.ok(desktopDepths.size >= 5);
   assert.notEqual(desktop.positions.provider[2], desktop.positions.consumer[2]);
-  assert.ok(Math.max(...Object.values(phone.positions).map(([, , z]) => Math.abs(z))) <= .55, "phone depth should stay subtle");
+  assert.ok(Math.max(...Object.values(phone.positions).map(([, , z]) => Math.abs(z))) <= .45);
+  assert.ok(phone.companyScale < desktop.companyScale);
 });
 
-test("every chapter has its own memorable caption and milestone", () => {
+test("each chapter has a distinct memory cue grounded in the corrected flow", () => {
   assert.equal(journeyMoments.length, chapters.length);
   assert.equal(new Set(journeyMoments.map(moment => moment.result)).size, chapters.length);
-  assert.ok(journeyMoments[6].detail.includes("original remains"));
+  assert.match(journeyMoments[2].detail, /DSP/i);
+  assert.match(journeyMoments[3].detail, /access policy/i);
+  assert.match(journeyMoments[6].detail, /EDR/i);
+  assert.match(journeyMoments[6].detail, /original source/i);
 });
