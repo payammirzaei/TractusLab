@@ -1,8 +1,9 @@
 .scene {
   position:absolute;
-  inset:164px 0 153px;
+  inset:156px 0 142px;
   overflow:hidden;
   isolation:isolate;
+  background:radial-gradient(ellipse at 50% 65%,rgba(40,81,104,.12),transparent 64%);
 }
 
 .scene canvas {
@@ -16,13 +17,13 @@
 .topologyHeader {
   position:absolute;
   z-index:30;
-  top:4px;
+  top:14px;
   left:50%;
   width:min(760px,68%);
   transform:translateX(-50%);
   display:grid;
   justify-items:center;
-  gap:9px;
+  gap:13px;
   pointer-events:none;
 }
 
@@ -31,10 +32,6 @@
   justify-items:center;
   gap:1px;
   padding:4px 12px;
-  border:1px solid rgba(121,215,255,.18);
-  border-radius:999px;
-  background:rgba(3,9,16,.78);
-  backdrop-filter:blur(8px);
 }
 
 .dataspaceTitle strong {
@@ -45,9 +42,10 @@
 }
 
 .dataspaceTitle span {
-  color:#6f879c;
-  font-size:7.5px;
-  letter-spacing:.08em;
+  color:#8a9daf;
+  font-size:10px;
+  margin-top:5px;
+  letter-spacing:.02em;
 }
 
 .rail {
@@ -87,7 +85,7 @@
 }
 
 .railStep span {
-  font-size:7.5px;
+  font-size:9px;
   font-weight:560;
 }
 
@@ -101,30 +99,32 @@
 .actorStrip {
   position:absolute;
   z-index:26;
-  top:62px;
-  left:50%;
-  width:min(1180px,94%);
-  transform:translateX(-50%);
-  display:grid;
-  grid-template-columns:.75fr 1.15fr 1.15fr .75fr;
-  align-items:start;
-  gap:18px;
+  top:100px;
+  left:0;
+  width:100%;
   pointer-events:none;
 }
 
 .actor {
-  justify-self:center;
+  position:absolute;
+  transform:translateX(-50%);
   display:grid;
   justify-items:center;
   text-align:center;
-  border-radius:11px;
-  background:rgba(4,10,18,.76);
-  backdrop-filter:blur(8px);
+  border-radius:7px;
+  background:linear-gradient(145deg,rgba(20,39,54,.8),rgba(7,17,29,.8));
+  pointer-events:auto;
+  cursor:pointer;
   transition:opacity .18s,border-color .18s,box-shadow .18s;
 }
+.actor:nth-child(1) { left:14%; }
+.actor:nth-child(2) { left:32%; }
+.actor:nth-child(3) { left:68%; }
+.actor:nth-child(4) { left:86%; }
+.actor:hover { background:#1c3343; }
 
 .businessActor {
-  min-width:110px;
+  min-width:90px;
   padding:6px 9px;
   border:1px solid rgba(150,173,205,.18);
   opacity:.45;
@@ -135,8 +135,8 @@
 .businessActor span { margin-top:2px; color:#778da2; font-size:7.7px; }
 
 .edcActor {
-  width:min(190px,100%);
-  padding:8px 11px 9px;
+  width:146px;
+  padding:8px 9px;
   border:1px solid rgba(121,215,255,.42);
   box-shadow:0 10px 28px rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.02);
   opacity:.72;
@@ -158,7 +158,7 @@
 .edcActor strong {
   margin-top:2px;
   color:#f1f8ff;
-  font-size:13px;
+  font-size:12px;
   line-height:1.15;
 }
 
@@ -168,61 +168,33 @@
   font-size:7.6px;
 }
 
-.providerEdcHint,
-.consumerEdcHint {
-  position:absolute;
-  z-index:8;
-  top:46%;
-  transform:translate(-50%,-50%);
-  color:rgba(121,215,255,.58);
-  font-size:8px;
-  line-height:1.15;
-  text-align:center;
-  letter-spacing:.14em;
-  pointer-events:none;
-  text-shadow:0 0 14px rgba(99,191,255,.28);
-}
-
-.providerEdcHint { left:34%; }
-.consumerEdcHint { left:66%; }
-.providerEdcHint b,.consumerEdcHint b { font-size:16px; letter-spacing:.08em; color:rgba(214,242,255,.74); }
-
-.businessHintLeft,
-.businessHintRight {
-  position:absolute;
-  z-index:7;
-  top:47%;
-  color:rgba(130,151,169,.36);
-  font-size:7px;
-  letter-spacing:.12em;
-  text-transform:uppercase;
-  pointer-events:none;
-}
-.businessHintLeft { left:5%; }
-.businessHintRight { right:5%; }
-
 .heroCallout {
   --hero-accent:#63bfff;
   position:absolute;
   z-index:25;
   left:50%;
-  bottom:64px;
+  bottom:48px;
   transform:translateX(-50%);
-  width:min(330px,44%);
-  padding:9px 12px 10px;
-  border:1px solid color-mix(in srgb,var(--hero-accent) 58%,transparent);
-  border-left:2px solid var(--hero-accent);
-  border-radius:10px;
-  background:rgba(3,10,18,.92);
+  width:min(310px,60%);
+  padding:11px 14px 12px;
+  text-align:left;
+  cursor:pointer;
+  border:1px solid color-mix(in srgb,var(--hero-accent) 30%,transparent);
+  border-top:2px solid var(--hero-accent);
+  border-radius:8px;
+  background:linear-gradient(135deg,rgba(15,32,45,.93),rgba(7,17,29,.94));
   box-shadow:0 10px 28px rgba(0,0,0,.34),0 0 22px color-mix(in srgb,var(--hero-accent) 8%,transparent);
   backdrop-filter:blur(9px);
-  pointer-events:none;
+  pointer-events:auto;
 }
+.heroCallout:hover { border-color:var(--hero-accent); }
+.heroCallout small { display:flex; align-items:center; gap:7px; color:var(--hero-accent); font-size:7px; letter-spacing:.12em; margin-bottom:7px; }
+.heroCallout small i { width:3px; height:3px; background:currentColor; border-radius:50%; }
 
 .heroCallout strong {
   display:block;
   color:#eff8ff;
-  font-size:12px;
+  font-size:13px;
   line-height:1.2;
 }
 
@@ -230,16 +202,15 @@
   display:block;
   margin-top:3px;
   color:#8fa7ba;
-  font-size:8.3px;
+  font-size:10px;
   line-height:1.4;
 }
 
 .planeLegend {
   position:absolute;
   z-index:24;
-  left:50%;
-  bottom:10px;
-  transform:translateX(-50%);
+  left:18px;
+  bottom:13px;
   display:flex;
   gap:7px;
   pointer-events:none;
@@ -247,14 +218,15 @@
 
 .planeLegend span {
   padding:4px 7px;
-  border:1px solid rgba(99,191,255,.2);
-  border-radius:999px;
+  border:1px solid rgba(99,191,255,.12);
+  border-radius:5px;
   background:rgba(4,10,18,.8);
-  color:#53697c;
-  font-size:7.3px;
+  color:#8296a8;
+  font-size:9px;
   font-weight:720;
   white-space:nowrap;
 }
+.planeLegend i { display:inline-block; width:4px; height:4px; border-radius:50%; background:currentColor; margin-right:5px; }
 
 .planeLegend span:first-child[data-active="true"] { border-color:rgba(99,191,255,.65); color:#63bfff; }
 .planeLegend span:last-child[data-active="true"] { border-color:rgba(85,239,200,.65); color:#55efc8; }
@@ -262,19 +234,22 @@
 .payloadState {
   position:absolute;
   z-index:25;
-  right:12px;
-  bottom:42px;
+  right:18px;
+  bottom:13px;
   padding:5px 8px;
   border:1px solid rgba(96,117,138,.28);
-  border-radius:999px;
+  border-radius:5px;
   background:rgba(4,10,18,.84);
   color:#71879c;
-  font-size:7.3px;
+  font-size:8px;
   font-weight:760;
   letter-spacing:.08em;
   pointer-events:none;
 }
 .payloadState[data-state="moving"],.payloadState[data-state="done"] { border-color:rgba(85,239,200,.42); color:#55efc8; }
+.assetLoading { position:absolute; bottom:13px; left:18px; display:flex; align-items:center; gap:7px; padding:5px 9px; color:#b3ccdc; font-size:10px; background:#0b1929; border:1px solid #264557; border-radius:5px; z-index:28; }
+.assetLoading i { width:5px; height:5px; border-radius:50%; background:#79e9d0; }
+.assetLoading span { font-variant-numeric:tabular-nums; color:#6f9aaf; }
 
 /* The old readout used conceptual NodeIds and could display Company A → Company B
    even when the actual teaching route is EDC → EDC. Titles now name the EDC actors,
@@ -282,9 +257,9 @@
 :global([aria-live="polite"][aria-atomic="true"] > small) { display:none !important; }
 
 @media(max-width:850px) {
-  .scene { inset:164px 0 153px; }
-  .actorStrip { width:96%; grid-template-columns:.65fr 1.15fr 1.15fr .65fr; gap:7px; }
-  .edcActor { padding:7px 6px; }
+  .scene { inset:156px 0 142px; }
+  .actorStrip { top:95px; }
+  .edcActor { width:128px; padding:7px 6px; }
   .edcActor strong { font-size:11px; }
   .businessActor { min-width:84px; padding-inline:6px; }
   .businessActor span { display:none; }
@@ -292,15 +267,20 @@
 }
 
 @media(max-width:550px) {
-  .scene { inset:163px 0 169px; }
+  .scene { inset:148px 0 166px; }
   .topologyHeader { width:94%; }
-  .dataspaceTitle span { display:none; }
-  .actorStrip { top:54px; grid-template-columns:1fr 1fr; width:94%; gap:5px 8px; }
-  .businessActor { display:none; }
-  .edcActor { width:100%; }
-  .providerEdcHint,.consumerEdcHint,.businessHintLeft,.businessHintRight { display:none; }
+  .dataspaceTitle span { font-size:9px; }
+  .actorStrip { top:100px; }
+  .businessActor { min-width:50px; border:0; background:transparent; padding:0; top:-19px; }
+  .businessActor strong { font-size:8px; }
+  .edcActor { width:102px; }
+  .edcActor > span { font-size:6px; }
+  .edcActor strong { font-size:10px; }
+  .edcActor small { font-size:6px; }
   .rail { width:92%; }
-  .heroCallout { bottom:58px; width:72%; padding:7px 9px; }
-  .planeLegend span { font-size:6.4px; padding:3px 5px; }
-  .payloadState { right:8px; bottom:35px; font-size:6.5px; }
+  .heroCallout { bottom:58px; width:76%; padding:9px 12px; }
+  .planeLegend { left:10px; bottom:7px; }
+  .planeLegend span { font-size:8px; padding:3px 5px; }
+  .payloadState { right:10px; bottom:33px; font-size:7px; }
+  .assetLoading { left:10px; bottom:7px; font-size:9px; }
 }

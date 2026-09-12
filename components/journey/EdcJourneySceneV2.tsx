@@ -8,10 +8,12 @@ import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { chapters } from "@/lib/data-journey";
-import { directJourneyScene, type DirectedArtifact, type SceneArtifact } from "@/lib/journey-director";
+import { directJourneyScene, directorArtifactOwners, type DirectedArtifact, type SceneArtifact } from "@/lib/journey-director";
 import { edcRouteForBeat, type EdcPoint, type EdcRoute } from "@/lib/journey-edc-topology";
 import { sequenceFrame } from "@/lib/journey-sequence";
 import SimpleJourneyScene from "./SimpleJourneyScene";
+import { loadJourneyModels } from "./journey-models";
+import { createJourneyStage } from "./journey-stage-effects";
 import type { SceneProps } from "./journey-scene-types";
 import ui from "./edc-scene.module.css";
 
@@ -28,6 +30,7 @@ const C = {
 type Artifact = { group: THREE.Group; meshes: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>[] };
 type Connector = {
   group: THREE.Group;
+  spine: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
   frame: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
   control: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
   data: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
@@ -55,7 +58,7 @@ function TopologyHeader({ rail, chapter }: { rail?: { labels: string[]; active: 
     <div className={ui.topologyHeader}>
       <div className={ui.dataspaceTitle}>
         <strong>TRACTUS-X DATASPACE</strong>
-        <span>connector-to-connector exchange</span>
+        <span>Two companies. One governed exchange.</span>
       </div>
       {rail && (
         <div className={ui.rail} style={{ "--rail-accent": accent } as React.CSSProperties}>
@@ -71,35 +74,36 @@ function TopologyHeader({ rail, chapter }: { rail?: { labels: string[]; active: 
   );
 }
 
-function ActorStrip({ chapter }: { chapter: number }) {
+function ActorStrip({ chapter, onSelect }: { chapter: number; onSelect: SceneProps["onSelect"] }) {
   const providerActive = chapter >= 1 && chapter <= 6;
   const consumerActive = chapter >= 2 && chapter <= 6;
   return (
     <div className={ui.actorStrip}>
-      <div className={`${ui.actor} ${ui.businessActor}`} data-active={chapter <= 1}>
+      <button type="button" onClick={() => onSelect("provider")} className={`${ui.actor} ${ui.businessActor}`} data-active={chapter <= 1}>
         <strong>Company A</strong><span>Business systems</span>
-      </div>
-      <div className={`${ui.actor} ${ui.edcActor}`} data-active={providerActive}>
+      </button>
+      <button type="button" onClick={() => onSelect("provider")} className={`${ui.actor} ${ui.edcActor}`} data-active={providerActive}>
         <span>TRACTUS-X EDC</span><strong>Provider EDC</strong><small>Control plane · Data plane</small>
-      </div>
-      <div className={`${ui.actor} ${ui.edcActor}`} data-active={consumerActive}>
+      </button>
+      <button type="button" onClick={() => onSelect("consumer")} className={`${ui.actor} ${ui.edcActor}`} data-active={consumerActive}>
         <span>TRACTUS-X EDC</span><strong>Consumer EDC</strong><small>Control plane · Data plane</small>
-      </div>
-      <div className={`${ui.actor} ${ui.businessActor}`} data-active={chapter === 4 || chapter === 7}>
+      </button>
+      <button type="button" onClick={() => onSelect("consumer")} className={`${ui.actor} ${ui.businessActor}`} data-active={chapter === 4 || chapter === 7}>
         <strong>Company B</strong><span>Business systems</span>
-      </div>
+      </button>
     </div>
   );
 }
 
-function HeroCallout({ item }: { item?: DirectedArtifact }) {
+function HeroCallout({ item, onSelect }: { item?: DirectedArtifact; onSelect: SceneProps["onSelect"] }) {
   if (!item) return null;
   const accent = toneColor(item.tone);
   return (
-    <div className={ui.heroCallout} style={{ "--hero-accent": accent } as React.CSSProperties}>
+    <button type="button" className={ui.heroCallout} onClick={() => onSelect(directorArtifactOwners[item.id] ?? "agreement")} style={{ "--hero-accent": accent } as React.CSSProperties}>
+      <small>IN FOCUS <i/> {item.id === "source" ? "PRIVATE AT COMPANY A" : item.id === "copy" ? "RECEIVED AT COMPANY B" : "EXCHANGE ARTIFACT"}</small>
       <strong>{item.title}</strong>
       <span>{item.detail}</span>
-    </div>
+    </button>
   );
 }
 
@@ -107,8 +111,8 @@ function PlaneLegend({ chapter, lane }: { chapter: number; lane: "none" | "contr
   if (chapter < 2) return null;
   return (
     <div className={ui.planeLegend}>
-      <span data-active={lane === "control"}>EDC CONTROL · DSP / CATALOG / CONTRACT / EDR</span>
-      <span data-active={lane === "data"}>EDC DATA · AUTHORIZED FETCH / PAYLOAD</span>
+      <span data-active={lane === "control"}><i/>Control plane</span>
+      <span data-active={lane === "data"}><i/>Data plane</span>
     </div>
   );
 }
@@ -127,6 +131,7 @@ export default function EdcJourneySceneV2(props: SceneProps) {
   const live = useRef(props);
   live.current = props;
   const [unavailable, setUnavailable] = useState(false);
+  const [loading, setLoading] = useState({ loaded: 0, settled: 0 });
 
   const frame = sequenceFrame(props.chapter, props.progress, props.fault);
   const directed = directJourneyScene(props.chapter, frame.current.id, frame.current.kind);
@@ -135,7 +140,7 @@ export default function EdcJourneySceneV2(props: SceneProps) {
 
   useEffect(() => {
     const element = host.current;
-    if (!element) return;
+    if (!element || unavailable) return;
 
     let renderer: THREE.WebGLRenderer;
     try {
@@ -149,13 +154,13 @@ export default function EdcJourneySceneV2(props: SceneProps) {
     renderer.setClearColor(0x02060b, 0);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.02;
+    renderer.toneMappingExposure = 1.18;
     renderer.domElement.setAttribute("aria-hidden", "true");
     Object.assign(renderer.domElement.style, { position: "absolute", inset: "0", width: "100%", height: "100%", pointerEvents: "none", transform: "none" });
     element.prepend(renderer.domElement);
 
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x02060b, .012);
+    scene.fog = new THREE.FogExp2(0x060d18, .035);
     const camera = new THREE.PerspectiveCamera(38, 1, .1, 100);
     const pointer = new THREE.Vector2();
     const lookAt = new THREE.Vector3();
@@ -174,15 +179,16 @@ export default function EdcJourneySceneV2(props: SceneProps) {
     const room = new RoomEnvironment();
     const env = pmrem.fromScene(room, .04);
     room.dispose(); pmrem.dispose(); scene.environment = env.texture;
-    scene.add(new THREE.HemisphereLight(0xc5e8ff, 0x010306, .92));
-    const key = new THREE.DirectionalLight(0xe5f8ff, 1.3); key.position.set(-4, 7, 8);
-    const rim = new THREE.DirectionalLight(0xb9afff, .95); rim.position.set(6, -1, 5);
+    scene.add(new THREE.HemisphereLight(0xc5e8ff, 0x13243c, 1.6));
+    const key = new THREE.DirectionalLight(0xe5f8ff, 3.2); key.position.set(-4, 7, 8);
+    const rim = new THREE.DirectionalLight(0xb9afff, 2.4); rim.position.set(6, 3, -2);
     const activeLight = new THREE.PointLight(0x63bfff, 0, 7, 2); scene.add(key, rim, activeLight);
 
     const composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
-    composer.addPass(new UnrealBloomPass(new THREE.Vector2(1, 1), .2, .18, 1.28));
+    composer.addPass(new UnrealBloomPass(new THREE.Vector2(1, 1), .32, .4, 1.15));
     composer.addPass(new OutputPass());
+    const stage = createJourneyStage(scene);
 
     function createWorld(color: string): World {
       const group = new THREE.Group();
@@ -200,7 +206,7 @@ export default function EdcJourneySceneV2(props: SceneProps) {
       const controlHalo = new THREE.Mesh(geo(new THREE.TorusGeometry(.48, .012, 6, 56)), mat(new THREE.MeshBasicMaterial({ color: C.control, transparent: true, opacity: .12, depthWrite: false }))); controlHalo.position.y = .5; controlHalo.rotation.x = Math.PI / 2;
       const dataHalo = new THREE.Mesh(geo(new THREE.TorusGeometry(.48, .012, 6, 56)), mat(new THREE.MeshBasicMaterial({ color: C.data, transparent: true, opacity: .08, depthWrite: false }))); dataHalo.position.y = -.5; dataHalo.rotation.x = Math.PI / 2;
       group.add(frame, control, data, spine, controlHalo, dataHalo); scene.add(group);
-      return { group, frame, control, data, controlHalo, dataHalo };
+      return { group, frame, spine, control, data, controlHalo, dataHalo };
     }
 
     function gem(shape: THREE.BufferGeometry, color: string): Artifact {
@@ -250,42 +256,50 @@ export default function EdcJourneySceneV2(props: SceneProps) {
       copy: gem(new THREE.CapsuleGeometry(.14, .27, 5, 10), C.data),
     };
 
+    const assets = loadJourneyModels([
+      { id: "providerSystem", parent: providerSystem.group, fallback: [providerSystem.core, providerSystem.shell] },
+      { id: "consumerSystem", parent: consumerSystem.group, fallback: [consumerSystem.core, consumerSystem.shell] },
+      { id: "providerEdc", parent: providerEdc.group, fallback: [providerEdc.frame, providerEdc.spine, providerEdc.control, providerEdc.data] },
+      { id: "consumerEdc", parent: consumerEdc.group, fallback: [consumerEdc.frame, consumerEdc.spine, consumerEdc.control, consumerEdc.data] },
+      ...(Object.keys(artifacts) as SceneArtifact[]).map(id => ({ id, parent: artifacts[id].group, fallback: artifacts[id].meshes })),
+    ], (loaded, settled) => setLoading({ loaded, settled }));
+
     const positions: Record<EdcPoint, THREE.Vector3> = {
-      "provider-system": new THREE.Vector3(-5.2, 0, .05),
-      "provider-source": new THREE.Vector3(-4.85, -.72, .45),
-      "provider-control": new THREE.Vector3(-1.95, .5, .28),
-      "provider-data": new THREE.Vector3(-1.95, -.5, .28),
-      "consumer-control": new THREE.Vector3(1.95, .5, .28),
-      "consumer-data": new THREE.Vector3(1.95, -.5, .28),
-      "consumer-system": new THREE.Vector3(5.2, 0, .05),
+      "provider-system": new THREE.Vector3(-5.05, -.3, -.6),
+      "provider-source": new THREE.Vector3(-5.05, -.4, .8),
+      "provider-control": new THREE.Vector3(-2.5, .65, .55),
+      "provider-data": new THREE.Vector3(-2.5, -.65, .55),
+      "consumer-control": new THREE.Vector3(2.5, .65, .55),
+      "consumer-data": new THREE.Vector3(2.5, -.65, .55),
+      "consumer-system": new THREE.Vector3(5.05, -.3, -.6),
     };
 
     const homes: Record<SceneArtifact, THREE.Vector3> = {
-      source: new THREE.Vector3(-4.85, -.72, .45),
-      offer: new THREE.Vector3(-1.25, .95, .64),
+      source: new THREE.Vector3(-5.05, -.5, 1.1),
+      offer: new THREE.Vector3(-3.5, .4, .7),
       dsp: new THREE.Vector3(0, .5, .64),
       trust: new THREE.Vector3(-1.25, .5, .62),
-      usage: new THREE.Vector3(1.25, .62, .62),
-      agreement: new THREE.Vector3(0, .5, .66),
+      usage: new THREE.Vector3(3.5, .4, .7),
+      agreement: new THREE.Vector3(0, 1.4, -.6),
       edr: new THREE.Vector3(1.22, .72, .64),
       payload: new THREE.Vector3(2.65, -.58, .62),
-      copy: new THREE.Vector3(4.78, -.55, .55),
+      copy: new THREE.Vector3(5.05, -.5, 1.1),
     };
 
     providerSystem.group.position.copy(positions["provider-system"]);
     consumerSystem.group.position.copy(positions["consumer-system"]);
-    providerEdc.group.position.set(-1.95, 0, .18);
-    consumerEdc.group.position.set(1.95, 0, .18);
+    providerEdc.group.position.set(-2.5, .05, -.3);
+    consumerEdc.group.position.set(2.5, .05, -.3);
     Object.keys(artifacts).forEach(id => artifacts[id as SceneArtifact].group.position.copy(homes[id as SceneArtifact]));
 
     function makeLane(color: string, y: number) {
-      const g = geo(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-1.95, y, .06), new THREE.Vector3(1.95, y, .06)]));
+      const g = geo(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-2.5, y, .52), new THREE.Vector3(2.5, y, .52)]));
       const line = new THREE.Line(g, lineMat(color, .16)); scene.add(line); return line;
     }
-    const controlLane = makeLane(C.control, .5);
-    const dataLane = makeLane(C.data, -.5);
-    const providerLocal = new THREE.Line(geo(new THREE.BufferGeometry().setFromPoints([positions["provider-system"], new THREE.Vector3(-1.95, 0, .18)])), lineMat(C.provider, .08));
-    const consumerLocal = new THREE.Line(geo(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(1.95, 0, .18), positions["consumer-system"]])), lineMat(C.consumer, .08));
+    const controlLane = makeLane(C.control, .65);
+    const dataLane = makeLane(C.data, -.65);
+    const providerLocal = new THREE.Line(geo(new THREE.BufferGeometry().setFromPoints([positions["provider-system"], providerEdc.group.position])), lineMat(C.provider, .08));
+    const consumerLocal = new THREE.Line(geo(new THREE.BufferGeometry().setFromPoints([consumerEdc.group.position, positions["consumer-system"]])), lineMat(C.consumer, .08));
     scene.add(providerLocal, consumerLocal);
 
     const routeGeo = geo(new THREE.BufferGeometry());
@@ -297,12 +311,12 @@ export default function EdcJourneySceneV2(props: SceneProps) {
 
     function syncCamera() {
       const aspect = Math.max(.7, camera.aspect || 1);
-      const halfW = 6.05;
-      const halfH = 2.7;
+      const halfW = 6.4;
+      const halfH = 2.8;
       const fov = 38 * Math.PI / 180;
       baseDistance = Math.max(halfH / Math.tan(fov / 2), halfW / (Math.tan(fov / 2) * aspect)) + 1.7;
-      camera.position.set(0, .02, baseDistance);
-      lookAt.set(0, 0, 0);
+      camera.position.set(0, 3.4, baseDistance);
+      lookAt.set(0, -.05, .25);
     }
 
     function buildRoute(r: EdcRoute) {
@@ -332,15 +346,7 @@ export default function EdcJourneySceneV2(props: SceneProps) {
       return out;
     }
 
-    function artifactHome(id: SceneArtifact, chapter: number, currentId: string) {
-      if (id === "offer") {
-        if (chapter === 1) return homes.offer;
-        if (chapter === 3 && currentId === "catalog-response") return homes.offer;
-        return new THREE.Vector3(1.25, .95, .64);
-      }
-      if (id === "usage" && chapter === 5) return new THREE.Vector3(-1.22, .55, .62);
-      return homes[id];
-    }
+    const focusHome = new THREE.Vector3(0, -.3, 2.25);
 
     const resize = new ResizeObserver(() => {
       width = Math.max(1, element.clientWidth); height = Math.max(1, element.clientHeight);
@@ -375,8 +381,8 @@ export default function EdcJourneySceneV2(props: SceneProps) {
       const t = p.reduced ? 0 : seq.position * chapters[p.chapter].duration;
       const parallax = mobile || p.reduced ? 0 : 1;
 
-      camera.position.set(pointer.x * .05 * parallax, pointer.y * .025 * parallax, baseDistance);
-      lookAt.set(pointer.x * .02 * parallax, pointer.y * .012 * parallax, 0);
+      camera.position.set(pointer.x * .05 * parallax, 3.4 + pointer.y * .12 * parallax, baseDistance - (p.reduced ? 0 : Math.sin(seq.position * Math.PI) * .2));
+      lookAt.set(pointer.x * .02 * parallax, -.05, .25);
       camera.lookAt(lookAt);
 
       const providerBusiness = p.chapter <= 1 || current.id === "read-source" || current.id === "payload";
@@ -385,12 +391,14 @@ export default function EdcJourneySceneV2(props: SceneProps) {
       providerSystem.shell.material.opacity = providerBusiness ? .075 : .025;
       consumerSystem.core.material.emissiveIntensity = consumerBusiness ? .72 : .14;
       consumerSystem.shell.material.opacity = consumerBusiness ? .075 : .025;
-      providerSystem.group.rotation.y = Math.sin(t * .05) * .035;
-      consumerSystem.group.rotation.y = Math.sin(t * .05 + 1) * .035;
+      providerSystem.group.rotation.y = .24 + Math.sin(t * .05) * .025;
+      consumerSystem.group.rotation.y = -.24 + Math.sin(t * .05 + 1) * .025;
 
       const dataActive = d.lane === "data" || r.mode === "data" || r.mode === "payload";
       const providerConnectorActive = p.chapter >= 1 && p.chapter <= 6;
       const consumerConnectorActive = p.chapter >= 2 && p.chapter <= 6;
+      assets.animate("providerEdc", t, providerConnectorActive, dataActive);
+      assets.animate("consumerEdc", t, consumerConnectorActive, dataActive);
       [[providerEdc, providerConnectorActive], [consumerEdc, consumerConnectorActive]].forEach(([connectorRaw, activeRaw]) => {
         const connector = connectorRaw as Connector; const active = activeRaw as boolean;
         connector.frame.material.opacity = active ? .28 : .11;
@@ -398,27 +406,35 @@ export default function EdcJourneySceneV2(props: SceneProps) {
         connector.data.material.emissiveIntensity = active && dataActive ? 1.15 : .22;
         connector.controlHalo.material.opacity = active && !dataActive ? .34 : .06;
         connector.dataHalo.material.opacity = active && dataActive ? .34 : .05;
-        connector.group.rotation.y = Math.sin(t * .035) * .012;
+        connector.group.rotation.y = (connector === providerEdc ? .12 : -.12) + Math.sin(t * .035) * .012;
       });
 
       const visible = new Set(d.artifacts.map(item => item.id));
+      const activeHero = d.artifacts.find(item => item.emphasis === "hero");
       (Object.keys(artifacts) as SceneArtifact[]).forEach(id => {
         artifacts[id].group.visible = visible.has(id) || (id === "agreement" && p.chapter === 6);
-        artifacts[id].group.position.copy(artifactHome(id, p.chapter, current.id));
+        const isHero = activeHero?.id === id;
+        artifacts[id].group.position.copy(isHero ? focusHome : homes[id]);
+        const reveal = p.reduced || current.status !== "active" ? 1 : .88 + ease(current.fraction * 5) * .12;
+        artifacts[id].group.scale.setScalar(isHero ? reveal : .36);
+        if (isHero && !p.reduced && !p.fault) artifacts[id].group.position.y += Math.sin(t * .8) * .035;
+        assets.animate(id, t, isHero, dataActive, p.reduced ? 0 : current.fraction, !!p.fault);
       });
 
       if (p.chapter === 3 && current.id === "catalog-response" && visible.has("offer")) {
-        artifacts.offer.group.position.lerpVectors(new THREE.Vector3(-1.25, .95, .64), new THREE.Vector3(1.25, .95, .64), ease(current.fraction));
+        artifacts.offer.group.position.lerpVectors(positions["provider-control"], positions["consumer-control"], ease(current.fraction));
+        artifacts.offer.group.scale.setScalar(.48);
       }
       if (p.chapter === 6 && current.id === "transfer-start" && visible.has("edr")) {
         artifacts.edr.group.position.lerpVectors(positions["provider-control"], positions["consumer-control"], ease(current.fraction));
         artifacts.edr.group.position.z += Math.sin(Math.PI * ease(current.fraction)) * .3;
+        artifacts.edr.group.scale.setScalar(.48);
       }
 
       buildRoute(r);
       routeLine.material.color.set(r.mode === "data" || r.mode === "payload" ? C.data : r.mode === "local" ? (p.chapter === 4 || p.chapter === 7 ? C.consumer : C.provider) : C.control);
-      routeLine.material.opacity = r.mode === "payload" ? .78 : .58;
-      token.visible = r.mode !== "none" && r.mode !== "payload" && current.status === "active";
+      routeLine.material.opacity = p.fault ? .12 : r.mode === "payload" ? .62 : .32;
+      token.visible = r.mode !== "none" && r.mode !== "payload" && current.status === "active" && !p.fault;
       if (token.visible) {
         pointOnRoute(r, ease(current.fraction), token.position);
         token.material.color.set(r.mode === "data" ? C.data : C.control);
@@ -426,29 +442,31 @@ export default function EdcJourneySceneV2(props: SceneProps) {
         token.material.emissiveIntensity = 1.55;
         token.rotation.set(t * .2, t * .34, .1);
       }
-      if (r.mode === "payload" && visible.has("payload")) pointOnRoute(r, ease(current.fraction), artifacts.payload.group.position);
+      if (r.mode === "payload" && visible.has("payload")) {
+        pointOnRoute(r, ease(current.fraction), artifacts.payload.group.position);
+        artifacts.payload.group.scale.setScalar(.6);
+      }
 
       controlLane.visible = p.chapter >= 2 && p.chapter <= 6;
       dataLane.visible = p.chapter === 6;
-      controlLane.material.opacity = dataActive ? .045 : .32;
-      dataLane.material.opacity = dataActive ? .42 : .045;
+      controlLane.material.opacity = dataActive ? .035 : .16;
+      dataLane.material.opacity = dataActive ? .24 : .035;
       providerLocal.material.opacity = providerBusiness ? .2 : .05;
       consumerLocal.material.opacity = consumerBusiness ? .2 : .05;
 
-      artifacts.offer.group.rotation.y = t * .07;
-      artifacts.trust.group.rotation.y = t * .2;
-      artifacts.usage.group.rotation.y = t * .17;
-      artifacts.agreement.group.rotation.y = t * .13;
-      artifacts.edr.group.rotation.y = t * .18;
-      artifacts.payload.group.rotation.y = t * .3;
-      artifacts.copy.group.rotation.y = t * .15;
+      // Keep authored fronts readable: a small inspection sway, never a full spin.
+      Object.values(artifacts).forEach(artifact => { artifact.group.rotation.y = .15 + Math.sin(t * .22) * .13; });
 
-      const activeHero = d.artifacts.find(item => item.emphasis === "hero");
       if (activeHero) {
         activeLight.position.copy(artifacts[activeHero.id].group.position).add(new THREE.Vector3(0, .38, 1.6));
         activeLight.color.set(toneColor(activeHero.tone));
-        activeLight.intensity = 1.4;
+        activeLight.intensity = 3.5;
       } else activeLight.intensity = .35;
+
+      stage.update({ time: t, fraction: ease(current.fraction), reduced: p.reduced, failed: !!p.fault, finished: seq.finished,
+        color: activeHero ? toneColor(activeHero.tone) : C.control, hero: activeHero ? artifacts[activeHero.id].group : undefined,
+        route: r.mode !== "none", destination: routePoints.at(-1), sample: (fraction, out) => pointOnRoute(r, fraction, out),
+        provider: providerConnectorActive || providerBusiness, consumer: consumerConnectorActive || consumerBusiness, data: dataActive });
 
       if (!mobile && !p.reduced) composer.render(); else renderer.render(scene, camera);
     }
@@ -458,25 +476,25 @@ export default function EdcJourneySceneV2(props: SceneProps) {
     renderer.domElement.addEventListener("webglcontextlost", lost);
     return () => {
       disposed = true; cancelAnimationFrame(raf); resize.disconnect();
+      assets.dispose();
+      stage.dispose();
       element.removeEventListener("pointermove", move); element.removeEventListener("pointerleave", leave);
       renderer.domElement.removeEventListener("webglcontextlost", lost);
-      composer.dispose(); env.dispose(); geometries.forEach(item => item.dispose()); materials.forEach(item => item.dispose()); renderer.dispose(); renderer.domElement.remove();
+      composer.passes.forEach(pass => pass.dispose()); composer.dispose(); env.dispose(); geometries.forEach(item => item.dispose()); materials.forEach(item => item.dispose()); renderer.dispose(); renderer.domElement.remove();
     };
-  }, []);
+  }, [unavailable]);
 
   if (unavailable) return <SimpleJourneyScene {...props} />;
 
   return (
-    <div ref={host} className={ui.scene} role="group" aria-label={`Tractus-X EDC mediated journey. ${chapters[props.chapter].title}. ${frame.current.title}.`}>
+    <div ref={host} className={ui.scene} data-reduced={props.reduced} data-paused={props.paused} role="group" aria-label={`Tractus-X EDC mediated journey. ${chapters[props.chapter].title}. ${frame.current.title}.`}>
       <TopologyHeader rail={directed.rail} chapter={props.chapter} />
-      <ActorStrip chapter={props.chapter} />
-      <div className={ui.businessHintLeft}>business context</div>
-      <div className={ui.businessHintRight}>business context</div>
-      <div className={ui.providerEdcHint}>PROVIDER<br/><b>EDC</b></div>
-      <div className={ui.consumerEdcHint}>CONSUMER<br/><b>EDC</b></div>
-      <HeroCallout item={hero} />
+      <ActorStrip chapter={props.chapter} onSelect={props.onSelect} />
+      <HeroCallout item={hero} onSelect={props.onSelect} />
       <PlaneLegend chapter={props.chapter} lane={directed.lane} />
       <PayloadState chapter={props.chapter} routeMode={route.mode} delivered={frame.copyDelivered} />
+      {loading.settled < 13 && <div className={ui.assetLoading} role="status"><i/>Assembling the dataspace <span>{loading.settled}/13</span></div>}
+      {loading.settled === 13 && loading.loaded < 13 && <div className={ui.assetLoading} role="status">Some models unavailable · simplified shapes shown</div>}
     </div>
   );
 }

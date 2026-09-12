@@ -1,0 +1,73 @@
+{
+  "generator": "Blender 5.2.1 LTS",
+  "assets": [
+    {
+      "name": "CompanyA_System",
+      "triangles": 1728,
+      "materials": 2
+    },
+    {
+      "name": "ProviderEDC",
+      "triangles": 1404,
+      "materials": 3
+    },
+    {
+      "name": "ConsumerEDC",
+      "triangles": 1404,
+      "materials": 3
+    },
+    {
+      "name": "CompanyB_System",
+      "triangles": 1728,
+      "materials": 2
+    },
+    {
+      "name": "Artifact_Source",
+      "triangles": 1812,
+      "materials": 2
+    },
+    {
+      "name": "Artifact_Offer",
+      "triangles": 756,
+      "materials": 3
+    },
+    {
+      "name": "Artifact_DSP",
+      "triangles": 648,
+      "materials": 2
+    },
+    {
+      "name": "Artifact_Trust",
+      "triangles": 544,
+      "materials": 2
+    },
+    {
+      "name": "Artifact_Usage",
+      "triangles": 756,
+      "materials": 2
+    },
+    {
+      "name": "Artifact_Agreement",
+      "triangles": 2004,
+      "materials": 2
+    },
+    {
+      "name": "Artifact_EDR",
+      "triangles": 708,
+      "materials": 2
+    },
+    {
+      "name": "Artifact_Payload",
+      "triangles": 1284,
+      "materials": 2
+    },
+    {
+      "name": "Artifact_Copy",
+      "triangles": 648,
+      "materials": 2
+    }
+  ],
+  "totalTriangles": 15424,
+  "totalPrimitives": 29,
+  "packBytes": 1061096
+}

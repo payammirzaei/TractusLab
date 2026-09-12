@@ -1,8 +1,24 @@
 node_modules/
 .next/
 out/
+
+# TypeScript and local build caches
+*.tsbuildinfo
+
+# Local environment files
 .env
 .env.*
 !.env.example
+
+# Package-manager and OS noise
 npm-debug.log*
 .DS_Store
+
+# Journey models are intentionally committed runtime assets.
+# Keep these explicit exceptions if a broader asset rule is added later.
+!public/
+!public/glb/
+!public/glb/**/*.glb
+!public/models/
+!public/models/journey/
+!public/models/journey/**/*.glb

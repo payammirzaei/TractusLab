@@ -1,0 +1,98 @@
+{
+  "source": "tractuslab.blend",
+  "sourceSha256": "a386484837644f005f83e3c17ce55c9855f7f610c9e1094c9aef9f034358d580",
+  "blender": "5.2.1 LTS",
+  "assets": [
+    {
+      "node": "CompanyA_System",
+      "sourceObjects": 107,
+      "triangles": 5000,
+      "primitives": 4
+    },
+    {
+      "node": "ProviderEDC",
+      "sourceObjects": 390,
+      "triangles": 10071,
+      "primitives": 12
+    },
+    {
+      "node": "ConsumerEDC",
+      "sourceObjects": 390,
+      "triangles": 10071,
+      "primitives": 12
+    },
+    {
+      "node": "CompanyB_System",
+      "sourceObjects": 107,
+      "triangles": 5000,
+      "primitives": 4
+    },
+    {
+      "node": "Artifact_Source",
+      "sourceObjects": 68,
+      "triangles": 4992,
+      "primitives": 7
+    },
+    {
+      "node": "Artifact_Offer",
+      "sourceObjects": 71,
+      "triangles": 5000,
+      "primitives": 6
+    },
+    {
+      "node": "Artifact_DSP",
+      "sourceObjects": 58,
+      "triangles": 5000,
+      "primitives": 7
+    },
+    {
+      "node": "Artifact_Trust",
+      "sourceObjects": 40,
+      "triangles": 5000,
+      "primitives": 5
+    },
+    {
+      "node": "Artifact_Usage",
+      "sourceObjects": 44,
+      "triangles": 5000,
+      "primitives": 7
+    },
+    {
+      "node": "Artifact_Agreement",
+      "sourceObjects": 61,
+      "triangles": 5000,
+      "primitives": 7
+    },
+    {
+      "node": "Artifact_EDR",
+      "sourceObjects": 38,
+      "triangles": 5000,
+      "primitives": 8
+    },
+    {
+      "node": "Artifact_Payload",
+      "sourceObjects": 57,
+      "triangles": 5000,
+      "primitives": 8
+    },
+    {
+      "node": "Artifact_Copy",
+      "sourceObjects": 44,
+      "triangles": 5000,
+      "primitives": 6
+    }
+  ],
+  "processing": [
+    "Export existing collection geometry only",
+    "Omit presentation and text objects",
+    "Omit outer glass shells and occluding cabinet fronts",
+    "One-segment bevels",
+    "Merge static parts",
+    "Consolidate neutral materials",
+    "Cap emission and disable transmission",
+    "Simplify dense meshes"
+  ],
+  "packBytes": 3241964,
+  "triangles": 75134,
+  "primitives": 93
+}
