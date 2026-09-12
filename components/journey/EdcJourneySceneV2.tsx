@@ -100,7 +100,7 @@ function HeroCallout({ item, onSelect }: { item?: DirectedArtifact; onSelect: Sc
   const accent = toneColor(item.tone);
   return (
     <button type="button" className={ui.heroCallout} onClick={() => onSelect(directorArtifactOwners[item.id] ?? "agreement")} style={{ "--hero-accent": accent } as React.CSSProperties}>
-      <small>IN FOCUS <i/> {item.id === "source" ? "PRIVATE AT COMPANY A" : item.id === "copy" ? "RECEIVED AT COMPANY B" : "EXCHANGE ARTIFACT"}</small>
+      <small>NOW <i/> {item.id === "source" ? "PRIVATE AT COMPANY A" : item.id === "copy" ? "RECEIVED AT COMPANY B" : "EXCHANGE ARTIFACT"}</small>
       <strong>{item.title}</strong>
       <span>{item.detail}</span>
     </button>
@@ -154,7 +154,7 @@ export default function EdcJourneySceneV2(props: SceneProps) {
     renderer.setClearColor(0x02060b, 0);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.18;
+    renderer.toneMappingExposure = 1.05;
     renderer.domElement.setAttribute("aria-hidden", "true");
     Object.assign(renderer.domElement.style, { position: "absolute", inset: "0", width: "100%", height: "100%", pointerEvents: "none", transform: "none" });
     element.prepend(renderer.domElement);
@@ -179,14 +179,14 @@ export default function EdcJourneySceneV2(props: SceneProps) {
     const room = new RoomEnvironment();
     const env = pmrem.fromScene(room, .04);
     room.dispose(); pmrem.dispose(); scene.environment = env.texture;
-    scene.add(new THREE.HemisphereLight(0xc5e8ff, 0x13243c, 1.6));
-    const key = new THREE.DirectionalLight(0xe5f8ff, 3.2); key.position.set(-4, 7, 8);
-    const rim = new THREE.DirectionalLight(0xb9afff, 2.4); rim.position.set(6, 3, -2);
+    scene.add(new THREE.HemisphereLight(0xc5e8ff, 0x13243c, 1.2));
+    const key = new THREE.DirectionalLight(0xe5f8ff, 1.8); key.position.set(-4, 7, 8);
+    const rim = new THREE.DirectionalLight(0xb9afff, 1.2); rim.position.set(6, 3, -2);
     const activeLight = new THREE.PointLight(0x63bfff, 0, 7, 2); scene.add(key, rim, activeLight);
 
     const composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
-    composer.addPass(new UnrealBloomPass(new THREE.Vector2(1, 1), .32, .4, 1.15));
+    composer.addPass(new UnrealBloomPass(new THREE.Vector2(1, 1), .12, .22, 1.22));
     composer.addPass(new OutputPass());
     const stage = createJourneyStage(scene);
 
@@ -346,7 +346,7 @@ export default function EdcJourneySceneV2(props: SceneProps) {
       return out;
     }
 
-    const focusHome = new THREE.Vector3(0, -.3, 2.25);
+    const focusHome = new THREE.Vector3(0, .8, 1.45);
 
     const resize = new ResizeObserver(() => {
       width = Math.max(1, element.clientWidth); height = Math.max(1, element.clientHeight);
@@ -381,8 +381,8 @@ export default function EdcJourneySceneV2(props: SceneProps) {
       const t = p.reduced ? 0 : seq.position * chapters[p.chapter].duration;
       const parallax = mobile || p.reduced ? 0 : 1;
 
-      camera.position.set(pointer.x * .05 * parallax, 3.4 + pointer.y * .12 * parallax, baseDistance - (p.reduced ? 0 : Math.sin(seq.position * Math.PI) * .2));
-      lookAt.set(pointer.x * .02 * parallax, -.05, .25);
+      camera.position.set(pointer.x * .035 * parallax, 2.35 + pointer.y * .08 * parallax, baseDistance - (p.reduced ? 0 : Math.sin(seq.position * Math.PI) * .12));
+      lookAt.set(pointer.x * .015 * parallax, .12, .35);
       camera.lookAt(lookAt);
 
       const providerBusiness = p.chapter <= 1 || current.id === "read-source" || current.id === "payload";

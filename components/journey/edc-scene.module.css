@@ -284,3 +284,30 @@
   .payloadState { right:10px; bottom:33px; font-size:7px; }
   .assetLoading { left:10px; bottom:7px; font-size:9px; }
 }
+
+/* Immersive mode is a presentation view: one stage, one reading order. */
+:global(.cinema) .scene {
+  inset:142px 0 92px;
+  background:linear-gradient(180deg,rgba(7,16,28,.22),rgba(7,16,28,.02));
+}
+:global(.cinema) .topologyHeader { top:16px; }
+:global(.cinema) .actorStrip { top:66px; }
+:global(.cinema) .actor { background:rgba(9,22,35,.92); box-shadow:0 6px 18px rgba(0,0,0,.2); }
+:global(.cinema) .businessActor { opacity:.72; }
+:global(.cinema) .edcActor { opacity:.95; }
+:global(.cinema) .heroCallout { left:auto; right:34px; bottom:28px; transform:none; width:280px; }
+:global(.cinema) .sceneCaption { bottom:30px; max-width:420px; }
+:global(.cinema) .planeLegend { bottom:10px; }
+:global(.cinema) .payloadState { bottom:10px; }
+:global(.cinema) .assetLoading { bottom:10px; }
+
+@media(max-width:850px) {
+  :global(.cinema) .scene { inset:142px 0 92px; }
+  :global(.cinema) .heroCallout { right:18px; width:260px; }
+}
+@media(max-width:550px) {
+  :global(.cinema) .scene { inset:154px 0 116px; }
+  :global(.cinema) .actorStrip { top:68px; }
+  :global(.cinema) .heroCallout { right:12px; bottom:34px; width:calc(100% - 24px); }
+  :global(.cinema) .sceneCaption { bottom:132px; }
+}

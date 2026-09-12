@@ -10,12 +10,13 @@ export function createJourneyStage(scene: THREE.Scene) {
   const mat = <T extends THREE.Material>(value: T) => { materials.push(value); return value; };
   const glow = (color: string, opacity: number) => mat(new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
 
-  const floor = new THREE.Mesh(geo(new THREE.PlaneGeometry(28, 22)), mat(new THREE.MeshStandardMaterial({ color: "#07121c", roughness: .58, metalness: .55, transparent: true, opacity: .68 })));
+  const floor = new THREE.Mesh(geo(new THREE.PlaneGeometry(28, 22)), mat(new THREE.MeshBasicMaterial({ color: "#0c1724", transparent: true, opacity: .55 })));
   floor.rotation.x = -Math.PI / 2; floor.position.y = -1.4; root.add(floor);
   const gridPoints: number[] = [];
   for (let i = -14; i <= 14; i++) gridPoints.push(i, -1.385, -10, i, -1.385, 10, -14, -1.385, i, 14, -1.385, i);
-  const grid = new THREE.LineSegments(geo(new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute(gridPoints, 3))), mat(new THREE.LineBasicMaterial({ color: "#4f8ba2", transparent: true, opacity: .065 })));
+  const grid = new THREE.LineSegments(geo(new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute(gridPoints, 3))), mat(new THREE.LineBasicMaterial({ color: "#6e91a4", transparent: true, opacity: .022 })));
   root.add(grid);
+  grid.visible = false;
 
   const pads: THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial>[] = [];
   [[-5.05, -.6, "#59edcf"], [-2.5, -.3, "#63bfff"], [2.5, -.3, "#aaa4ff"], [5.05, -.6, "#aaa4ff"]].forEach(([x, z, color]) => {
@@ -42,6 +43,7 @@ export function createJourneyStage(scene: THREE.Scene) {
   }
   const dust = new THREE.Points(geo(new THREE.BufferGeometry().setAttribute("position", new THREE.BufferAttribute(dustArray, 3))), mat(new THREE.PointsMaterial({ color: "#9fc9e0", size: .017, transparent: true, opacity: .32, depthWrite: false, sizeAttenuation: true })));
   root.add(dust);
+  dust.visible = false;
 
   const trail = new THREE.InstancedMesh(geo(new THREE.SphereGeometry(.035, 6, 4)), glow("#63bfff", .65), 18);
   trail.frustumCulled = false; trail.instanceMatrix.setUsage(THREE.DynamicDrawUsage); root.add(trail);
@@ -50,7 +52,7 @@ export function createJourneyStage(scene: THREE.Scene) {
   return {
     update(options: { time: number; fraction: number; reduced: boolean; failed: boolean; finished: boolean; color: string; hero: THREE.Object3D | undefined; route: boolean; destination: THREE.Vector3 | undefined; sample: (fraction: number, out: THREE.Vector3) => THREE.Vector3; provider: boolean; consumer: boolean; data: boolean }) {
       const o = options;
-      dust.visible = !o.reduced; dust.rotation.y = o.time * .007;
+      dust.visible = false; dust.rotation.y = o.time * .007;
       pads.forEach((pad, index) => { pad.material.opacity = (index < 2 ? o.provider : o.consumer) ? .45 : .12; });
       const accent = o.failed ? "#ff7e9b" : o.color;
       focusRing.material.color.set(accent); focusArc.material.color.set(accent);

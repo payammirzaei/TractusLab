@@ -47,7 +47,7 @@ export function prepareJourneyModel(root: THREE.Group, id: ModelId) {
       ownedMaterials.set(original, material);
       if (material instanceof THREE.MeshStandardMaterial) {
         material.envMapIntensity = .65;
-        material.emissiveIntensity = Math.min(material.emissiveIntensity, 1.1);
+        material.emissiveIntensity = Math.min(material.emissiveIntensity, .7);
         if (material.name === "TL_MAT_Control") control.push(material);
         if (material.name === "TL_MAT_Data") data.push(material);
       }
@@ -85,8 +85,8 @@ export function prepareJourneyModel(root: THREE.Group, id: ModelId) {
   return {
     group: content,
     animate(time: number, active: boolean, dataActive = false, fraction = 0, failed = false) {
-      control.forEach(material => { material.emissiveIntensity = active && !dataActive ? 1.65 : .32; });
-      data.forEach(material => { material.emissiveIntensity = active && dataActive ? 1.8 : .3; });
+      control.forEach(material => { material.emissiveIntensity = active && !dataActive ? .95 : .18; });
+      data.forEach(material => { material.emissiveIntensity = active && dataActive ? 1.05 : .18; });
       moving.forEach(part => {
         part.object.rotation.copy(part.rotation);
         part.object.position.copy(part.base);

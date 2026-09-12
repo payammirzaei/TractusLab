@@ -123,13 +123,24 @@
 .simpleNodes { display:flex; flex-wrap:wrap; gap:7px; justify-content:center; }
 .simpleNodes button { border:1px solid #344e6b; border-radius:8px; padding:8px 10px; background:#142238; color:#bfcee4; font-size:.875rem; }
 .simpleNodes button[aria-pressed=true] { border-color:#80e4cc; color:#a8ffe5; }
-.cinema { max-width:none; padding-top:20px; }
-.cinema .stage { min-height:75vh; }
+.cinema { max-width:none; padding:20px 40px 24px; }
+.cinema .experience { display:block; border:0; background:transparent; }
+.cinema .stage { min-height:0; height:min(720px,calc(100svh - 206px)); border:1px solid var(--line); border-radius:20px; }
+.cinema .guide { display:none; }
+.cinema .transport { max-width:1120px; margin-inline:auto; }
+.cinema .timeline { max-width:1120px; margin-inline:auto; }
+.cinema .bottomBar { max-width:1120px; margin-inline:auto; }
 @keyframes appear { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
 @media(min-width:1400px) { .experience { grid-template-columns:minmax(0,1fr) 380px; } .guide { padding:30px; } .stage { min-height:700px; } }
 @media(max-width:1100px) { .workspace { padding:22px 18px; } .experience { grid-template-columns:minmax(0,1fr) 320px; } .guide { padding:22px; } .stage { min-height:700px; } .timeline button { padding-inline:8px; } .renderControls { gap:10px; } }
 @media(max-width:850px) { .experience { grid-template-columns:1fr; } .stage { min-height:530px; } .guide { display:block; padding:25px; } .chapterCopy h2 { font-size:2rem; } .guideFooter { padding-top:22px; } .choices { grid-template-columns:repeat(3,minmax(0,1fr)); } .choices button { align-items:flex-start; } .guideFooter>span { text-align:left; } .timeline { grid-template-columns:repeat(4,minmax(0,1fr)); } .transport { gap:16px; } .bottomBar { flex-direction:column; } .cinema .stage { min-height:60vh; } }
 @media(max-width:550px) { .workspace { padding:18px 10px; } .heading { flex-wrap:wrap; gap:17px; padding:0 4px; } .titleRow .eyebrow { font-size:.75rem; letter-spacing:.08em; } .heading h1 { font-size:1.65rem; } .topControls { width:100%; justify-content:space-between; } .experience { border-radius:14px; } .stage { min-height:505px; } .canvas { inset:68px 0 115px; } .stageTop { inset:17px 16px auto; } .stageTag { font-size:.75rem; letter-spacing:.05em; } .simulationBadge { font-size:.75rem; } .nodeLabel { font-size:.75rem; padding:3px 5px; } .nodeLabel small { display:none; } .sceneCaption { bottom:76px; left:10px; right:10px; } .sceneCaption p { font-size:.75rem; letter-spacing:.1em; } .legend { bottom:20px; column-gap:14px; row-gap:8px; } .guide { padding:22px 18px; } .choices { grid-template-columns:1fr; } .chapterCopy h2 { font-size:1.9rem; } .playProgress { min-width:65px; max-width:100px; } .renderControls { width:100%; justify-content:space-between; padding-top:4px; } .transport { column-gap:8px; } .speed { margin-left:0; flex-direction:column; gap:0; } .speed select { padding:2px; } .timeline { gap:5px; } .timeline button { padding:9px 8px 14px; font-size:.875rem; } .simpleScene { padding:100px 10px 170px; } .simpleNote { font-size:.75rem; } }
+.cinema .signalReadout { left:50%; right:auto; width:min(680px,70%); transform:translateX(-50%); }
+.cinema .sceneCaption { left:32px; right:auto; max-width:420px; text-align:left; }
+.cinema .legend { left:auto; right:32px; justify-content:flex-end; }
+.cinema .canvas { inset:170px 0 142px; }
+@media(max-width:850px) { .cinema { padding-inline:18px; } .cinema .signalReadout { width:min(680px,82%); } }
+@media(max-width:550px) { .cinema { padding-inline:10px; } .cinema .stage { height:calc(100svh - 245px); min-height:540px; } .cinema .signalReadout { left:14px; right:14px; width:auto; transform:none; } .cinema .sceneCaption { left:14px; right:14px; max-width:none; text-align:center; } .cinema .legend { left:14px; right:14px; justify-content:center; } .cinema .canvas { inset:176px 0 142px; } }
 @media(prefers-reduced-motion:reduce) { .workspace * { animation:none !important; transition:none !important; } }
 
 /* Keep a stable stage: long explanations must not stretch the camera viewport. */
