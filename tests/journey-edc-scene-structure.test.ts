@@ -11,7 +11,6 @@ test("EDC scene keeps Tractus-X connectors as named primary actors", () => {
   assert.match(scene, /TRACTUS-X EDC/);
   assert.match(scene, /Provider EDC/);
   assert.match(scene, /Consumer EDC/);
-  assert.match(scene, /TRACTUS-X DATASPACE/);
 });
 
 test("EDC scene keeps heroes on topology homes instead of a center stage teleport", () => {
@@ -21,11 +20,20 @@ test("EDC scene keeps heroes on topology homes instead of a center stage telepor
   assert.match(scene, /Keep the corridor readable/);
 });
 
+test("journey scene supports constrained mouse look-around", () => {
+  assert.match(scene, /orbit\.yaw/);
+  assert.match(scene, /setFromSpherical/);
+  assert.match(scene, /Drag to look/);
+  assert.match(css, /cursor:grab/);
+  assert.match(css, /touch-action:none/);
+});
+
 test("actor labels and hero callout are projected from world positions", () => {
   assert.match(scene, /placeLabel\(/);
   assert.match(scene, /placeCallout\(/);
-  assert.match(scene, /\.project\(camera\)/);
+  assert.match(scene, /Dock outside the model corridor/);
   assert.match(css, /\.actorStrip\s*\{[\s\S]*inset:0/);
+  assert.match(css, /data-dock/);
 });
 
 test("business systems stay secondary to EDC actors", () => {

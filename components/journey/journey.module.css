@@ -33,16 +33,16 @@
 .nodeLabel:focus-visible { z-index:4; }
 .nodeLabel[data-active=true] { color:var(--node-color); border-color:var(--node-color); background:#101e30e8; }
 .nodeLabel:hover { background:#1a2941; }
-.sceneCaption { position:absolute; bottom:61px; left:30px; right:30px; text-align:center; pointer-events:none; }
+.sceneCaption { position:absolute; bottom:42px; left:30px; right:30px; text-align:center; pointer-events:none; }
 .sceneCaption>span { font-size:.75rem; letter-spacing:.14em; color:#7f9bae; }
 .sceneCaption p { font-size:.875rem; font-weight:600; letter-spacing:.15em; color:#c1d5e6; margin:8px 0; }
 .sceneCaption small { font-size:.75rem; color:#93a5bd; }
-.sceneCaption h2 { font-size:clamp(1.3rem,2.3vw,2rem); font-weight:500; letter-spacing:-.045em; line-height:1.2; margin:10px 0 9px; color:#edf7ff; text-wrap:balance; }
+.sceneCaption h2 { font-size:clamp(1.05rem,1.7vw,1.45rem); font-weight:500; letter-spacing:-.04em; line-height:1.2; margin:6px 0 4px; color:#edf7ff; text-wrap:balance; }
 .sceneCaption>span { color:var(--phase-color); letter-spacing:.09em; }
-.sceneCaption small { font-size:.875rem; color:#a5b8d1; }
+.sceneCaption small { display:none; }
 .milestone { position:absolute; z-index:4; top:70px; right:25px; display:flex; align-items:center; gap:8px; padding:9px 12px; border:1px solid var(--phase-color); color:var(--phase-color); background:#081626ed; border-radius:30px; font-size:.75rem; letter-spacing:.08em; animation:appear .45s ease both; pointer-events:none; }
 .stage[data-reduced=true] .milestone { animation:none; }
-.legend { position:absolute; inset:auto 15px 20px; display:flex; justify-content:center; gap:20px; flex-wrap:wrap; color:#a2b3cc; font-size:.75rem; }
+.legend { position:absolute; inset:auto 15px 12px; display:flex; justify-content:center; gap:20px; flex-wrap:wrap; color:#a2b3cc; font-size:.75rem; }
 .legend span { display:flex; align-items:center; gap:7px; }
 .legend i { height:3px; width:13px; border-radius:2px; }
 .guide { min-width:0; display:flex; flex-direction:column; padding:25px; background:linear-gradient(140deg,#111d30,#0d1727); }

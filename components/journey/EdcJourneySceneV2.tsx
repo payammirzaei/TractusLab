@@ -54,22 +54,17 @@ function toneColor(tone: DirectedArtifact["tone"]) {
 
 function TopologyHeader({ rail, chapter }: { rail?: { labels: string[]; active: number }; chapter: number }) {
   const accent = chapter === 5 ? C.agreement : chapter === 6 ? C.data : C.control;
+  if (!rail) return null;
   return (
     <div className={ui.topologyHeader}>
-      <div className={ui.dataspaceTitle}>
-        <strong>TRACTUS-X DATASPACE</strong>
-        <span>Two companies. One governed exchange.</span>
+      <div className={ui.rail} style={{ "--rail-accent": accent } as CSSProperties}>
+        {rail.labels.map((label, index) => (
+          <div key={label} className={ui.railStep} data-state={index === rail.active ? "active" : index < rail.active ? "done" : "future"}>
+            <i />
+            <span>{label}</span>
+          </div>
+        ))}
       </div>
-      {rail && (
-        <div className={ui.rail} style={{ "--rail-accent": accent } as CSSProperties}>
-          {rail.labels.map((label, index) => (
-            <div key={label} className={ui.railStep} data-state={index === rail.active ? "active" : index < rail.active ? "done" : "future"}>
-              <i />
-              <span>{label}</span>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -102,8 +97,11 @@ function ActorStrip({ chapter, onSelect, labelRefs }: {
 function HeroCallout({ item, onSelect, calloutRef }: { item?: DirectedArtifact; onSelect: SceneProps["onSelect"]; calloutRef: RefObject<HTMLButtonElement | null> }) {
   if (!item) return null;
   const accent = toneColor(item.tone);
+  const dock = item.id === "source" || item.id === "offer" || item.id === "trust" ? "left"
+    : item.id === "copy" || item.id === "usage" ? "right"
+    : "center";
   return (
-    <button type="button" ref={calloutRef} className={ui.heroCallout} onClick={() => onSelect(directorArtifactOwners[item.id] ?? "agreement")} style={{ "--hero-accent": accent } as CSSProperties}>
+    <button type="button" ref={calloutRef} className={ui.heroCallout} data-dock={dock} onClick={() => onSelect(directorArtifactOwners[item.id] ?? "agreement")} style={{ "--hero-accent": accent } as CSSProperties}>
       <small>NOW <i/> {item.id === "source" ? "PRIVATE AT COMPANY A" : item.id === "copy" ? "RECEIVED AT COMPANY B" : "EXCHANGE ARTIFACT"}</small>
       <strong>{item.title}</strong>
       <span>{item.detail}</span>
@@ -174,8 +172,11 @@ export default function EdcJourneySceneV2(props: SceneProps) {
     const lookTarget = new THREE.Vector3();
     const sample = new THREE.Vector3();
     const project = new THREE.Vector3();
+    const orbitOffset = new THREE.Vector3();
+    const spherical = new THREE.Spherical();
     const routePoints: THREE.Vector3[] = [];
     const routeCurve = new THREE.CatmullRomCurve3([], false, "centripetal");
+    const orbit = { yaw: 0, pitch: 0, zoom: 0, smoothYaw: 0, smoothPitch: 0, smoothZoom: 0, dragging: false, lastX: 0, lastY: 0 };
 
     const geometries = new Set<THREE.BufferGeometry>();
     const materials = new Set<THREE.Material>();
@@ -284,28 +285,32 @@ export default function EdcJourneySceneV2(props: SceneProps) {
     };
 
     const homes: Record<SceneArtifact, THREE.Vector3> = {
-      source: new THREE.Vector3(-5.05, .55, 1.05),
-      offer: new THREE.Vector3(-2.5, 1.35, .85),
-      dsp: new THREE.Vector3(0, 1.05, .9),
-      trust: new THREE.Vector3(-2.5, 1.2, .9),
-      usage: new THREE.Vector3(2.5, 1.2, .9),
-      agreement: new THREE.Vector3(0, 1.55, .2),
-      edr: new THREE.Vector3(2.5, 1.15, .9),
-      payload: new THREE.Vector3(2.65, -.1, .85),
-      copy: new THREE.Vector3(5.05, .55, 1.05),
+      source: new THREE.Vector3(-5.05, .15, 1.35),
+      offer: new THREE.Vector3(-2.5, -.05, 1.45),
+      dsp: new THREE.Vector3(0, .35, 1.35),
+      trust: new THREE.Vector3(-2.5, .15, 1.35),
+      usage: new THREE.Vector3(2.5, .15, 1.35),
+      agreement: new THREE.Vector3(0, .95, .85),
+      edr: new THREE.Vector3(2.5, .2, 1.35),
+      payload: new THREE.Vector3(0, -.25, 1.2),
+      copy: new THREE.Vector3(5.05, .15, 1.35),
     };
 
     const labelAnchors: Record<"provider-system" | "provider-edc" | "consumer-edc" | "consumer-system", THREE.Vector3> = {
-      "provider-system": new THREE.Vector3(-5.05, 1.55, -.6),
-      "provider-edc": new THREE.Vector3(-2.5, 1.85, -.3),
-      "consumer-edc": new THREE.Vector3(2.5, 1.85, -.3),
-      "consumer-system": new THREE.Vector3(5.05, 1.55, -.6),
+      "provider-system": new THREE.Vector3(-5.05, 1.35, -.6),
+      "provider-edc": new THREE.Vector3(-2.5, 1.55, -.3),
+      "consumer-edc": new THREE.Vector3(2.5, 1.55, -.3),
+      "consumer-system": new THREE.Vector3(5.05, 1.35, -.6),
     };
 
     providerSystem.group.position.copy(positions["provider-system"]);
     consumerSystem.group.position.copy(positions["consumer-system"]);
     providerEdc.group.position.set(-2.5, .05, -.3);
     consumerEdc.group.position.set(2.5, .05, -.3);
+    providerSystem.group.scale.setScalar(1.18);
+    consumerSystem.group.scale.setScalar(1.18);
+    providerEdc.group.scale.setScalar(1.12);
+    consumerEdc.group.scale.setScalar(1.12);
     Object.keys(artifacts).forEach(id => artifacts[id as SceneArtifact].group.position.copy(homes[id as SceneArtifact]));
 
     function makeLane(color: string, y: number) {
@@ -327,27 +332,43 @@ export default function EdcJourneySceneV2(props: SceneProps) {
 
     function syncCamera() {
       const aspect = Math.max(.7, camera.aspect || 1);
-      const halfW = 6.4;
-      const halfH = 2.8;
+      const halfW = 5.7;
+      const halfH = 2.15;
       const fov = 38 * Math.PI / 180;
-      baseDistance = Math.max(halfH / Math.tan(fov / 2), halfW / (Math.tan(fov / 2) * aspect)) + 1.7;
-      camTarget.set(0, 2.55, baseDistance);
-      lookTarget.set(0, .15, .3);
-      camera.position.copy(camTarget);
-      lookAt.copy(lookTarget);
+      // Closer framing so the four actors fill the stage instead of floating in empty dark space.
+      baseDistance = Math.max(halfH / Math.tan(fov / 2), halfW / (Math.tan(fov / 2) * aspect)) + .55;
+      camTarget.set(0, 2.05, baseDistance);
+      lookTarget.set(0, .05, .35);
+      if (!orbit.dragging && Math.abs(orbit.yaw) < .001 && Math.abs(orbit.pitch) < .001 && Math.abs(orbit.zoom) < .001) {
+        camera.position.copy(camTarget);
+        lookAt.copy(lookTarget);
+      }
     }
 
-    function aimCamera(cue: ReturnType<typeof directJourneyScene>["camera"], parallaxX: number, parallaxY: number, breathe: number) {
+    function aimCamera(cue: ReturnType<typeof directJourneyScene>["camera"], parallaxX: number, parallaxY: number, breathe: number, reduced: boolean) {
       // Keep the corridor readable: tiny actor bias only, never hide the opposite EDC.
-      const x = cue === "provider" ? -.45 : cue === "consumer" ? .45 : 0;
-      const y = cue === "data" ? 2.25 : cue === "control" || cue === "center" ? 2.65 : 2.55;
+      const x = cue === "provider" ? -.35 : cue === "consumer" ? .35 : 0;
+      const y = cue === "data" ? 1.85 : cue === "control" || cue === "center" ? 2.2 : 2.05;
       const z = baseDistance - breathe;
-      const lookX = cue === "provider" ? -.85 : cue === "consumer" ? .85 : 0;
-      const lookY = cue === "data" ? -.15 : cue === "control" || cue === "center" ? .4 : .15;
-      camTarget.set(x + parallaxX * .03, y + parallaxY * .06, z);
-      lookTarget.set(lookX + parallaxX * .015, lookY, cue === "data" ? .4 : .3);
-      camera.position.lerp(camTarget, .12);
-      lookAt.lerp(lookTarget, .12);
+      const lookX = cue === "provider" ? -.7 : cue === "consumer" ? .7 : 0;
+      const lookY = cue === "data" ? -.2 : cue === "control" || cue === "center" ? .25 : .05;
+      lookTarget.set(lookX + parallaxX * .02, lookY + parallaxY * .015, cue === "data" ? .4 : .35);
+
+      // Constrained orbit around the teaching look-point so learners can peek inside the stage.
+      const ease = orbit.dragging ? .42 : .14;
+      orbit.smoothYaw = THREE.MathUtils.lerp(orbit.smoothYaw, reduced ? 0 : orbit.yaw, ease);
+      orbit.smoothPitch = THREE.MathUtils.lerp(orbit.smoothPitch, reduced ? 0 : orbit.pitch, ease);
+      orbit.smoothZoom = THREE.MathUtils.lerp(orbit.smoothZoom, reduced ? 0 : orbit.zoom, ease);
+
+      orbitOffset.set(x + parallaxX * .04 - lookTarget.x, y + parallaxY * .05 - lookTarget.y, z - lookTarget.z);
+      spherical.setFromVector3(orbitOffset);
+      spherical.theta += orbit.smoothYaw;
+      spherical.phi = THREE.MathUtils.clamp(spherical.phi + orbit.smoothPitch, .42, Math.PI / 2 - .05);
+      spherical.radius = THREE.MathUtils.clamp(spherical.radius + orbit.smoothZoom, baseDistance * .72, baseDistance * 1.28);
+      camTarget.copy(lookTarget).add(orbitOffset.setFromSpherical(spherical));
+
+      camera.position.lerp(camTarget, orbit.dragging ? .28 : .14);
+      lookAt.lerp(lookTarget, .16);
       camera.lookAt(lookAt);
     }
 
@@ -356,36 +377,40 @@ export default function EdcJourneySceneV2(props: SceneProps) {
       if (!el) return;
       project.copy(world).project(camera);
       if (project.z > 1) { el.style.opacity = "0"; return; }
-      // Project X from the 3D actor; keep a shared horizontal band so labels never collide with the title.
+      // Prefer even spacing so labels stay readable above each actor.
       const rawX = (project.x * .5 + .5) * width;
-      const minGap = width < 720 ? 78 : 118;
-      const ideal = 0.12 + slot * 0.253;
-      const blended = THREE.MathUtils.lerp(rawX, ideal * width, .35);
-      const x = THREE.MathUtils.clamp(blended, 56 + slot * minGap * .15, width - 56 - (3 - slot) * minGap * .15);
-      const y = width < 720 ? 86 : 78;
+      const ideal = (0.125 + slot * 0.25) * width;
+      const x = THREE.MathUtils.clamp(THREE.MathUtils.lerp(rawX, ideal, .55), 54, width - 54);
+      const y = width < 720 ? 64 : 52;
       el.style.left = `${x}px`;
       el.style.top = `${y}px`;
       el.style.transform = "translate(-50%,0)";
       el.style.opacity = "1";
     }
 
-    function placeCallout(world: THREE.Vector3 | undefined, artifactId?: SceneArtifact) {
+    function placeCallout(artifactId?: SceneArtifact) {
       const el = calloutRef.current;
-      if (!el || !world) { if (el) el.style.opacity = "0"; return; }
-      project.copy(world).project(camera);
-      if (project.z > 1) { el.style.opacity = "0"; return; }
-      const local = artifactId === "source" || artifactId === "copy";
-      const x = THREE.MathUtils.clamp((project.x * .5 + .5) * width + (local ? (project.x < 0 ? 70 : -70) : 0), 120, width - 120);
-      // Keep company-local callouts under the models; exchange artifacts sit nearer mid-stage.
-      const y = local
-        ? THREE.MathUtils.clamp(height * .68, height * .6, height - 72)
-        : THREE.MathUtils.clamp((-project.y * .5 + .5) * height + 42, height * .45, height - 88);
-      el.style.left = `${x}px`;
-      el.style.top = `${y}px`;
-      el.style.right = "auto";
-      el.style.bottom = "auto";
-      el.style.transform = "translate(-50%,0)";
+      if (!el) return;
+      if (!artifactId) { el.style.opacity = "0"; return; }
+      // Dock outside the model corridor so the 3D actors stay visible.
+      el.style.top = "auto";
+      el.style.bottom = "14px";
       el.style.opacity = "1";
+      const leftDock = artifactId === "source" || artifactId === "offer" || artifactId === "trust";
+      const rightDock = artifactId === "copy" || artifactId === "usage";
+      if (leftDock) {
+        el.style.left = "16px";
+        el.style.right = "auto";
+        el.style.transform = "none";
+      } else if (rightDock) {
+        el.style.left = "auto";
+        el.style.right = "16px";
+        el.style.transform = "none";
+      } else {
+        el.style.left = "50%";
+        el.style.right = "auto";
+        el.style.transform = "translateX(-50%)";
+      }
     }
 
     function buildRoute(r: EdcRoute) {
@@ -422,13 +447,58 @@ export default function EdcJourneySceneV2(props: SceneProps) {
     });
     resize.observe(element);
 
+    const isUiTarget = (target: EventTarget | null) => target instanceof Element && !!target.closest("button,a,input,select,label");
+
     const move = (event: PointerEvent) => {
       const rect = element.getBoundingClientRect(); if (!rect.width || !rect.height) return;
       pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -(((event.clientY - rect.top) / rect.height) * 2 - 1));
+      if (!orbit.dragging) return;
+      const dx = event.clientX - orbit.lastX;
+      const dy = event.clientY - orbit.lastY;
+      orbit.lastX = event.clientX;
+      orbit.lastY = event.clientY;
+      orbit.yaw = THREE.MathUtils.clamp(orbit.yaw - dx * .0048, -.62, .62);
+      orbit.pitch = THREE.MathUtils.clamp(orbit.pitch + dy * .0036, -.28, .34);
     };
-    const leave = () => pointer.set(0, 0);
+    const down = (event: PointerEvent) => {
+      if (event.button !== 0 || isUiTarget(event.target) || live.current.reduced) return;
+      orbit.dragging = true;
+      orbit.lastX = event.clientX;
+      orbit.lastY = event.clientY;
+      element.dataset.dragging = "true";
+      element.setPointerCapture(event.pointerId);
+    };
+    const up = (event: PointerEvent) => {
+      if (!orbit.dragging) return;
+      orbit.dragging = false;
+      delete element.dataset.dragging;
+      try { element.releasePointerCapture(event.pointerId); } catch { /* already released */ }
+    };
+    const leave = () => {
+      pointer.set(0, 0);
+      if (orbit.dragging) {
+        orbit.dragging = false;
+        delete element.dataset.dragging;
+      }
+    };
+    const wheel = (event: WheelEvent) => {
+      if (live.current.reduced || isUiTarget(event.target)) return;
+      event.preventDefault();
+      orbit.zoom = THREE.MathUtils.clamp(orbit.zoom + event.deltaY * .0022, -2.1, 2.4);
+    };
+    const dblclick = (event: MouseEvent) => {
+      if (isUiTarget(event.target)) return;
+      orbit.yaw = 0;
+      orbit.pitch = 0;
+      orbit.zoom = 0;
+    };
     element.addEventListener("pointermove", move, { passive: true });
+    element.addEventListener("pointerdown", down);
+    element.addEventListener("pointerup", up);
+    element.addEventListener("pointercancel", up);
     element.addEventListener("pointerleave", leave);
+    element.addEventListener("wheel", wheel, { passive: false });
+    element.addEventListener("dblclick", dblclick);
 
     let raf = 0, last = 0, disposed = false;
     function render(now: number) {
@@ -446,17 +516,17 @@ export default function EdcJourneySceneV2(props: SceneProps) {
       const d = directJourneyScene(p.chapter, current.id, current.kind);
       const r = edcRouteForBeat(p.chapter, current.id, current.kind);
       const t = p.reduced ? 0 : seq.position * chapters[p.chapter].duration;
-      const parallax = mobile || p.reduced ? 0 : 1;
+      const parallax = mobile || p.reduced || orbit.dragging ? 0 : .55;
       const breathe = p.reduced ? 0 : Math.sin(seq.position * Math.PI) * .12;
 
-      aimCamera(d.camera, pointer.x * parallax, pointer.y * parallax, breathe);
+      aimCamera(d.camera, pointer.x * parallax, pointer.y * parallax, breathe, p.reduced);
 
       const providerBusiness = p.chapter <= 1 || current.id === "read-source" || current.id === "payload";
       const consumerBusiness = p.chapter === 4 || p.chapter === 7 || current.id === "payload";
-      providerSystem.core.material.emissiveIntensity = providerBusiness ? .72 : .14;
-      providerSystem.shell.material.opacity = providerBusiness ? .075 : .025;
-      consumerSystem.core.material.emissiveIntensity = consumerBusiness ? .72 : .14;
-      consumerSystem.shell.material.opacity = consumerBusiness ? .075 : .025;
+      providerSystem.core.material.emissiveIntensity = providerBusiness ? .95 : .28;
+      providerSystem.shell.material.opacity = providerBusiness ? .1 : .045;
+      consumerSystem.core.material.emissiveIntensity = consumerBusiness ? .95 : .28;
+      consumerSystem.shell.material.opacity = consumerBusiness ? .1 : .045;
       providerSystem.group.rotation.y = .24 + Math.sin(t * .05) * .025;
       consumerSystem.group.rotation.y = -.24 + Math.sin(t * .05 + 1) * .025;
 
@@ -467,37 +537,37 @@ export default function EdcJourneySceneV2(props: SceneProps) {
       assets.animate("consumerEdc", t, consumerConnectorActive, dataActive);
       [[providerEdc, providerConnectorActive], [consumerEdc, consumerConnectorActive]].forEach(([connectorRaw, activeRaw]) => {
         const connector = connectorRaw as Connector; const active = activeRaw as boolean;
-        connector.frame.material.opacity = active ? .28 : .11;
-        connector.control.material.emissiveIntensity = active && !dataActive ? 1.05 : .25;
-        connector.data.material.emissiveIntensity = active && dataActive ? 1.15 : .22;
-        connector.controlHalo.material.opacity = active && !dataActive ? .34 : .06;
-        connector.dataHalo.material.opacity = active && dataActive ? .34 : .05;
+        connector.frame.material.opacity = active ? .38 : .16;
+        connector.control.material.emissiveIntensity = active && !dataActive ? 1.25 : .42;
+        connector.data.material.emissiveIntensity = active && dataActive ? 1.3 : .38;
+        connector.controlHalo.material.opacity = active && !dataActive ? .42 : .1;
+        connector.dataHalo.material.opacity = active && dataActive ? .42 : .08;
         connector.group.rotation.y = (connector === providerEdc ? .12 : -.12) + Math.sin(t * .035) * .012;
       });
 
-      const visible = new Set(d.artifacts.map(item => item.id));
+      const visible = new Set(d.artifacts.filter(item => item.emphasis !== "context").map(item => item.id));
       const activeHero = d.artifacts.find(item => item.emphasis === "hero");
       (Object.keys(artifacts) as SceneArtifact[]).forEach(id => {
         artifacts[id].group.visible = visible.has(id) || (id === "agreement" && p.chapter === 6);
         const isHero = activeHero?.id === id;
         // Keep heroes on topology homes — never teleport to a fake center stage.
         artifacts[id].group.position.copy(homes[id]);
-        const reveal = p.reduced || current.status !== "active" ? 1 : .88 + ease(current.fraction * 5) * .12;
-        artifacts[id].group.scale.setScalar(isHero ? reveal : .42);
-        if (isHero && !p.reduced && !p.fault) artifacts[id].group.position.y += .12 + Math.sin(t * .8) * .035;
+        const reveal = p.reduced || current.status !== "active" ? 1 : .9 + ease(current.fraction * 5) * .18;
+        artifacts[id].group.scale.setScalar(isHero ? reveal * 1.35 : .55);
+        if (isHero && !p.reduced && !p.fault) artifacts[id].group.position.y += .08 + Math.sin(t * .8) * .03;
         assets.animate(id, t, isHero, dataActive, p.reduced ? 0 : current.fraction, !!p.fault);
       });
 
       if (p.chapter === 3 && current.id === "catalog-response" && visible.has("offer")) {
         artifacts.offer.group.position.lerpVectors(positions["provider-control"], positions["consumer-control"], ease(current.fraction));
-        artifacts.offer.group.position.y += .5;
-        artifacts.offer.group.scale.setScalar(.55);
+        artifacts.offer.group.position.y += .35;
+        artifacts.offer.group.scale.setScalar(.7);
       }
       if (p.chapter === 6 && current.id === "transfer-start" && visible.has("edr")) {
         artifacts.edr.group.position.lerpVectors(positions["provider-control"], positions["consumer-control"], ease(current.fraction));
-        artifacts.edr.group.position.y += .45;
+        artifacts.edr.group.position.y += .35;
         artifacts.edr.group.position.z += Math.sin(Math.PI * ease(current.fraction)) * .3;
-        artifacts.edr.group.scale.setScalar(.55);
+        artifacts.edr.group.scale.setScalar(.7);
       }
 
       buildRoute(r);
@@ -535,7 +605,7 @@ export default function EdcJourneySceneV2(props: SceneProps) {
       placeLabel("provider-edc", labelAnchors["provider-edc"], 1);
       placeLabel("consumer-edc", labelAnchors["consumer-edc"], 2);
       placeLabel("consumer-system", labelAnchors["consumer-system"], 3);
-      placeCallout(activeHero ? artifacts[activeHero.id].group.position : undefined, activeHero?.id);
+      placeCallout(activeHero?.id);
 
       stage.update({ time: t, fraction: ease(current.fraction), reduced: p.reduced, failed: !!p.fault, finished: seq.finished,
         color: activeHero ? toneColor(activeHero.tone) : C.control, hero: activeHero ? artifacts[activeHero.id].group : undefined,
@@ -552,7 +622,13 @@ export default function EdcJourneySceneV2(props: SceneProps) {
       disposed = true; cancelAnimationFrame(raf); resize.disconnect();
       assets.dispose();
       stage.dispose();
-      element.removeEventListener("pointermove", move); element.removeEventListener("pointerleave", leave);
+      element.removeEventListener("pointermove", move);
+      element.removeEventListener("pointerdown", down);
+      element.removeEventListener("pointerup", up);
+      element.removeEventListener("pointercancel", up);
+      element.removeEventListener("pointerleave", leave);
+      element.removeEventListener("wheel", wheel);
+      element.removeEventListener("dblclick", dblclick);
       renderer.domElement.removeEventListener("webglcontextlost", lost);
       composer.passes.forEach(pass => pass.dispose()); composer.dispose(); env.dispose(); geometries.forEach(item => item.dispose()); materials.forEach(item => item.dispose()); renderer.dispose(); renderer.domElement.remove();
     };
@@ -561,12 +637,20 @@ export default function EdcJourneySceneV2(props: SceneProps) {
   if (unavailable) return <SimpleJourneyScene {...props} />;
 
   return (
-    <div ref={host} className={ui.scene} data-reduced={props.reduced} data-paused={props.paused} role="group" aria-label={`Tractus-X EDC mediated journey. ${chapters[props.chapter].title}. ${frame.current.title}.`}>
+    <div
+      ref={host}
+      className={ui.scene}
+      data-reduced={props.reduced}
+      data-paused={props.paused}
+      role="group"
+      aria-label={`Tractus-X EDC mediated journey. ${chapters[props.chapter].title}. ${frame.current.title}. Drag to look around. Scroll to zoom. Double-click to reset.`}
+    >
       <TopologyHeader rail={directed.rail} chapter={props.chapter} />
       <ActorStrip chapter={props.chapter} onSelect={props.onSelect} labelRefs={labelRefs} />
       <HeroCallout item={hero} onSelect={props.onSelect} calloutRef={calloutRef} />
       <PlaneLegend chapter={props.chapter} lane={directed.lane} />
       <PayloadState chapter={props.chapter} routeMode={route.mode} delivered={frame.copyDelivered} />
+      {!props.reduced && <div className={ui.lookHint} aria-hidden="true">Drag to look · Scroll zoom · Double-click reset</div>}
       {loading.settled < 13 && <div className={ui.assetLoading} role="status"><i/>Assembling the dataspace <span>{loading.settled}/13</span></div>}
       {loading.settled === 13 && loading.loaded < 13 && <div className={ui.assetLoading} role="status">Some models unavailable · simplified shapes shown</div>}
     </div>
