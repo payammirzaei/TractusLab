@@ -536,37 +536,45 @@ export default function EdcJourneySceneV2(props: SceneProps) {
 
       const providerBusiness = p.chapter <= 1 || current.id === "read-source" || current.id === "payload";
       const consumerBusiness = p.chapter === 4 || p.chapter === 7 || current.id === "payload";
-      providerSystem.core.material.emissiveIntensity = providerBusiness ? .95 : .28;
-      providerSystem.shell.material.opacity = providerBusiness ? .1 : .045;
-      consumerSystem.core.material.emissiveIntensity = consumerBusiness ? .95 : .28;
-      consumerSystem.shell.material.opacity = consumerBusiness ? .1 : .045;
+      providerSystem.core.material.emissiveIntensity = providerBusiness ? 1.15 : .12;
+      providerSystem.shell.material.opacity = providerBusiness ? .14 : .02;
+      consumerSystem.core.material.emissiveIntensity = consumerBusiness ? 1.15 : .12;
+      consumerSystem.shell.material.opacity = consumerBusiness ? .14 : .02;
+      providerSystem.group.scale.setScalar(providerBusiness ? 1.22 : ((p.depth ?? "story") === "story" ? .92 : .78));
+      consumerSystem.group.scale.setScalar(consumerBusiness ? 1.22 : ((p.depth ?? "story") === "story" ? .92 : .78));
       providerSystem.group.rotation.y = .24 + Math.sin(t * .05) * .025;
       consumerSystem.group.rotation.y = -.24 + Math.sin(t * .05 + 1) * .025;
 
       const dataActive = d.lane === "data" || r.mode === "data" || r.mode === "payload";
       const providerConnectorActive = p.chapter >= 1 && p.chapter <= 6;
       const consumerConnectorActive = p.chapter >= 2 && p.chapter <= 6;
+      const depth = p.depth ?? "story";
+      if (labelRefs.current["provider-system"]) labelRefs.current["provider-system"].dataset.lens = depth === "architect" || depth === "developer" ? "dim" : "show";
+      if (labelRefs.current["consumer-system"]) labelRefs.current["consumer-system"].dataset.lens = depth === "architect" || depth === "developer" ? "dim" : "show";
+      if (labelRefs.current["provider-edc"]) labelRefs.current["provider-edc"].dataset.lens = depth === "story" && !providerConnectorActive ? "dim" : "show";
+      if (labelRefs.current["consumer-edc"]) labelRefs.current["consumer-edc"].dataset.lens = depth === "story" && !consumerConnectorActive ? "dim" : "show";
       assets.animate("providerEdc", t, providerConnectorActive, dataActive);
       assets.animate("consumerEdc", t, consumerConnectorActive, dataActive);
       [[providerEdc, providerConnectorActive], [consumerEdc, consumerConnectorActive]].forEach(([connectorRaw, activeRaw]) => {
         const connector = connectorRaw as Connector; const active = activeRaw as boolean;
-        connector.frame.material.opacity = active ? .38 : .16;
-        connector.control.material.emissiveIntensity = active && !dataActive ? 1.25 : .42;
-        connector.data.material.emissiveIntensity = active && dataActive ? 1.3 : .38;
-        connector.controlHalo.material.opacity = active && !dataActive ? .42 : .1;
-        connector.dataHalo.material.opacity = active && dataActive ? .42 : .08;
+        connector.frame.material.opacity = active ? .42 : .07;
+        connector.control.material.emissiveIntensity = active && !dataActive ? 1.45 : .18;
+        connector.data.material.emissiveIntensity = active && dataActive ? 1.5 : .16;
+        connector.controlHalo.material.opacity = active && !dataActive ? .48 : .04;
+        connector.dataHalo.material.opacity = active && dataActive ? .48 : .03;
         connector.group.rotation.y = (connector === providerEdc ? .12 : -.12) + Math.sin(t * .035) * .012;
+        connector.group.scale.setScalar(active ? 1.14 : .88);
       });
 
       const visible = new Set(d.artifacts.filter(item => item.emphasis !== "context").map(item => item.id));
       const activeHero = d.artifacts.find(item => item.emphasis === "hero");
       (Object.keys(artifacts) as SceneArtifact[]).forEach(id => {
-        artifacts[id].group.visible = visible.has(id) || (id === "agreement" && p.chapter === 6);
+        const residue = (id === "agreement" && p.chapter >= 5) || (id === "offer" && p.chapter >= 1 && p.chapter <= 5) || (id === "copy" && p.chapter >= 7);
+        artifacts[id].group.visible = visible.has(id) || residue;
         const isHero = activeHero?.id === id;
-        // Keep heroes on topology homes — never teleport to a fake center stage.
         artifacts[id].group.position.copy(homes[id]);
         const reveal = p.reduced || current.status !== "active" ? 1 : .9 + ease(current.fraction * 5) * .18;
-        artifacts[id].group.scale.setScalar(isHero ? reveal * 1.35 : .55);
+        artifacts[id].group.scale.setScalar(isHero ? reveal * 1.45 : residue && !visible.has(id) ? .42 : .55);
         if (isHero && !p.reduced && !p.fault) artifacts[id].group.position.y += .08 + Math.sin(t * .8) * .03;
         assets.animate(id, t, isHero, dataActive, p.reduced ? 0 : current.fraction, !!p.fault);
       });

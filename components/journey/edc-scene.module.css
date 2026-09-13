@@ -1,11 +1,11 @@
 .scene {
   position:absolute;
-  inset:96px 0 48px;
+  inset:18px 0 118px;
   overflow:hidden;
   isolation:isolate;
   cursor:grab;
   touch-action:none;
-  background:radial-gradient(ellipse at 50% 58%,rgba(48,96,120,.18),transparent 58%);
+  background:radial-gradient(ellipse at 50% 58%,rgba(48,96,120,.22),transparent 58%);
 }
 .scene[data-dragging="true"] { cursor:grabbing; }
 .scene[data-reduced="true"] { cursor:default; touch-action:auto; }
@@ -127,7 +127,8 @@
   cursor:pointer;
   transition:opacity .18s,border-color .18s,box-shadow .18s;
 }
-.actor:hover { background:#1c3343; }
+.actor[data-lens="dim"] { opacity:.18 !important; filter:saturate(.4); }
+.actor[data-lens="show"] { opacity:1; }
 
 .businessActor {
   min-width:90px;
@@ -281,7 +282,7 @@
 .assetLoading span { font-variant-numeric:tabular-nums; color:#6f9aaf; }
 
 @media(max-width:850px) {
-  .scene { inset:88px 0 44px; }
+  .scene { inset:14px 0 108px; }
   .edcActor { width:128px; padding:7px 6px; }
   .edcActor strong { font-size:11px; }
   .businessActor { min-width:84px; padding-inline:6px; }
@@ -290,7 +291,7 @@
 }
 
 @media(max-width:550px) {
-  .scene { inset:84px 0 56px; }
+  .scene { inset:12px 0 128px; }
   .topologyHeader { width:94%; }
   .dataspaceTitle span { font-size:9px; }
   .businessActor { min-width:50px; border:0; background:transparent; padding:0; }
@@ -311,8 +312,8 @@
 
 /* Immersive mode is a presentation view: one stage, one reading order. */
 :global(.cinema) .scene {
-  inset:72px 0 36px;
-  background:linear-gradient(180deg,rgba(7,16,28,.22),rgba(7,16,28,.02));
+  inset:12px 0 100px;
+  background:linear-gradient(180deg,rgba(7,16,28,.12),rgba(7,16,28,.02));
 }
 :global(.cinema) .topologyHeader { top:10px; }
 :global(.cinema) .actor { background:rgba(9,22,35,.92); box-shadow:0 6px 18px rgba(0,0,0,.2); }
@@ -323,8 +324,8 @@
 :global(.cinema) .assetLoading { bottom:10px; }
 
 @media(max-width:850px) {
-  :global(.cinema) .scene { inset:80px 0 40px; }
+  :global(.cinema) .scene { inset:12px 0 96px; }
 }
 @media(max-width:550px) {
-  :global(.cinema) .scene { inset:88px 0 52px; }
+  :global(.cinema) .scene { inset:10px 0 120px; }
 }

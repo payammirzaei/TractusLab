@@ -7,6 +7,7 @@ const css = fs.readFileSync(new URL("../components/journey/edc-scene.module.css"
 const journey = fs.readFileSync(new URL("../components/journey/DataJourney.tsx", import.meta.url), "utf8");
 const journeyCss = fs.readFileSync(new URL("../components/journey/journey.module.css", import.meta.url), "utf8");
 const stage = fs.readFileSync(new URL("../components/journey/journey-stage-effects.ts", import.meta.url), "utf8");
+const page = fs.readFileSync(new URL("../app/journey/page.tsx", import.meta.url), "utf8");
 
 test("EDC scene keeps Tractus-X connectors as named primary actors", () => {
   assert.match(scene, /Provider EDC/);
@@ -37,16 +38,24 @@ test("actor labels and hero callout are projected from world positions", () => {
   assert.match(css, /data-dock/);
 });
 
-test("stage declutter keeps one signal and hides redundant chrome", () => {
+test("immersive journey composition uses film title and record character", () => {
+  assert.match(journey, /filmTitle/);
+  assert.match(journey, /recordChip/);
+  assert.match(journey, /BAT-204/);
+  assert.match(journey, /data-mode/);
   assert.match(journey, /Guided/);
-  assert.doesNotMatch(journey, /> Explore</);
-  assert.doesNotMatch(journey, /FEDERATED DATASPACE/);
-  assert.doesNotMatch(journey, /sceneCaption/);
-  assert.doesNotMatch(journey, /simulationBadge/);
-  assert.match(journey, /sequence\.position >= 0\.62/);
-  assert.match(scene, /HERO_CALLOUT_IDS/);
-  assert.match(scene, /chapter < 6\) return null/);
-  assert.match(journeyCss, /\.sceneCaption,\.legend,\.simulationBadge\s*\{\s*display:none/);
+  assert.doesNotMatch(journey, /signalReadout/);
+  assert.doesNotMatch(journey, /LearnerNav/);
+  assert.match(journeyCss, /\.filmTitle/);
+  assert.match(journeyCss, /\.recordChip/);
+  assert.match(page, /Syne/);
+  assert.match(page, /IBM_Plex_Sans/);
+});
+
+test("stage hard-dims inactive topology and keeps artifact residue", () => {
+  assert.match(scene, /residue/);
+  assert.match(scene, /dataset\.lens/);
+  assert.match(css, /data-lens/);
 });
 
 test("business systems stay secondary to EDC actors", () => {
@@ -57,7 +66,6 @@ test("business systems stay secondary to EDC actors", () => {
 test("signal readout names EDC actors for control-plane routes", () => {
   assert.match(journey, /Provider EDC/);
   assert.match(journey, /Consumer EDC/);
-  assert.doesNotMatch(css, /aria-live="polite"\]\[aria-atomic="true"\] > small/);
 });
 
 test("floor focus ring follows the hero topology slot", () => {

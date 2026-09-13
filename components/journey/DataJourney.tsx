@@ -1,18 +1,24 @@
 "use client";
 
-import dynamic from "next/dynamic";
+import { ArrowRight, Check, ChevronLeft, CircleHelp, Expand, GitBranch, Pause, Play, RotateCcw, ScanLine, ShieldCheck, X, Zap } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useReducer, useRef, useState } from "react";
-import { ArrowRight, Check, ChevronLeft, CircleHelp, Expand, GitBranch, Pause, Play, RotateCcw, ScanLine, ShieldCheck, Sparkles, X, Zap } from "lucide-react";
-import { LearnerNav } from "@/components/LearnerNav";
+import dynamic from "next/dynamic";
 import { chapters, faults, initialJourney, journeyNodes, journeyReducer, type Depth, type Fault, type NodeId } from "@/lib/data-journey";
 import { journeyMoments } from "@/lib/journey-visuals";
 import { advanceJourneyProgress, sequenceFrame, signalStyles } from "@/lib/journey-sequence";
 import styles from "./journey.module.css";
 
-const NeuralScene = dynamic(() => import("./NeuralScene"), { ssr: false, loading: () => <div className={styles.sceneLoading} role="status"><ScanLine size={30}/><span>Opening the dataspace architecture…</span></div> });
+const NeuralScene = dynamic(() => import("./NeuralScene"), { ssr: false, loading: () => <div className={styles.sceneLoading} role="status"><ScanLine size={30}/><span>Opening the dataspace…</span></div> });
 const SimpleScene = dynamic(() => import("./NeuralScene").then(module => module.SimpleScene), { ssr: false });
 const questionCount = chapters.filter(chapter => chapter.question).length;
+
+function routeLine(sequence: ReturnType<typeof sequenceFrame>) {
+  const edcName = (id: NodeId) => id === "provider" ? "Provider EDC" : id === "consumer" ? "Consumer EDC" : journeyNodes[id].label;
+  const localName = (id: NodeId) => id === "provider" ? "Company A" : id === "consumer" ? "Company B" : journeyNodes[id].label;
+  if (sequence.current.from && sequence.current.to) return `${edcName(sequence.current.from)} → ${edcName(sequence.current.to)}`;
+  return `At ${sequence.current.kind === "local" ? localName(sequence.current.focus) : edcName(sequence.current.focus)}`;
+}
 
 export function DataJourney() {
   const [state, dispatch] = useReducer(journeyReducer, initialJourney);
@@ -35,6 +41,8 @@ export function DataJourney() {
   const answered = state.answered.includes(state.chapter);
   const needsAnswer = guided && !!chapter.question && !answered;
   const motionReduced = reduced || systemReduced;
+  const watch = !guided;
+  const immersive = cinema || watch;
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -81,81 +89,116 @@ export function DataJourney() {
     : state.chapter === 4 ? "Company B is choosing an offer here; provider-side usage-policy enforcement happens during contract negotiation."
     : state.chapter === 5 ? "Access policy already controlled catalogue visibility. Usage/contract policy is evaluated here during negotiation."
     : null;
-  // Unlock Continue once the learner has seen most of the beat — don't hold them hostage for the full animation tail.
-  const sequenceReady = sequence.finished || sequence.position >= 0.62;
+  const sequenceReady = sequence.finished || sequence.position >= 0.55;
   const canContinue = sequenceReady && !needsAnswer && !state.fault && !state.complete;
   const continueLabel = state.fault ? "Repair to continue"
     : !sequenceReady ? "Watch the beat…"
-    : needsAnswer ? "Choose an answer to continue"
+    : needsAnswer ? "Answer to continue"
     : chapter.verb;
+  const beatTitle = state.fault ? faults[state.fault].title : sequence.current.title;
+  const beatMeta = state.fault ? "FAILURE SNAPSHOT" : sequence.finished ? moment.result : signal.label;
+  const recordState = sequence.copyDelivered || state.chapter >= 7 ? "Governed copy" : "Private source";
 
-  return <main className={styles.page} lang="en">
-    {!cinema && <LearnerNav active="journey" eyebrow="Experience the exchange"/>}
-    <div className={`${styles.workspace} ${cinema ? styles.cinema : ""}`}>
+  return <main className={styles.page} lang="en" data-mode={watch ? "watch" : "guided"} data-cinema={immersive || undefined}>
+    <div className={`${styles.workspace} ${immersive ? `${styles.cinema} cinema` : ""}`}>
       <header className={styles.heading}>
-        <div className={styles.titleRow}><div className={styles.logo}><GitBranch size={22}/></div><div><p className={styles.eyebrow}>TRACTUSLAB / INTERACTIVE EXPERIENCE</p><h1>Data Journey<span>.</span></h1></div></div>
+        <div className={styles.titleRow}>
+          <Link href="/" className={styles.logo} aria-label="TractusLab home"><GitBranch size={20}/></Link>
+          <div>
+            <p className={styles.eyebrow}>Data exchange · Tractus-X teaching model</p>
+            <h1>Data Journey<span>.</span></h1>
+          </div>
+        </div>
         <div className={styles.topControls}>
           <div className={styles.segment} role="group" aria-label="Learning mode">
             <button aria-pressed={guided} onClick={() => setGuided(true)}><Zap size={14}/> Guided</button>
-            <button aria-pressed={!guided} onClick={() => { setGuided(false); setPaused(false); }}><Play size={14}/> Watch</button>
+            <button aria-pressed={watch} onClick={() => { setGuided(false); setPaused(false); }}><Play size={14}/> Watch</button>
           </div>
           <button className={styles.iconButton} onClick={() => setCinema(!cinema)} aria-label={cinema ? "Exit immersive view" : "Enter immersive view"} title={cinema ? "Exit immersive view (Escape)" : "Immersive view"}>{cinema ? <X size={19}/> : <Expand size={19}/>}</button>
         </div>
       </header>
 
       <div className={styles.experience}>
-        <section className={styles.stage} aria-label="Tractus-X data exchange visualization" data-reduced={motionReduced} style={{ "--phase-color": state.fault ? "#ff8ea3" : journeyNodes[chapter.focus].color } as React.CSSProperties}>
-          {state.fault && <div className={styles.stageTop}><span className={styles.stageTag}><span className={styles.liveDot}/> EXCHANGE BLOCKED</span></div>}
+        <section className={styles.stage} aria-label="Tractus-X data exchange visualization" data-reduced={motionReduced} style={{ "--phase-color": state.fault ? "#ff8ea3" : journeyNodes[chapter.focus].color, "--signal-color": state.fault ? "#ff8ea3" : signal.color } as React.CSSProperties}>
           <Scene {...sceneProps}/>
-          <div className={styles.signalReadout} style={{ "--signal-color": state.fault ? "#ff8ea3" : signal.color } as React.CSSProperties}>
-            <span className={styles.signalNumber}>{String(state.chapter + 1).padStart(2, "0")}</span>
-            <div aria-live="polite" aria-atomic="true"><span>{state.fault ? "FAILURE SNAPSHOT" : sequence.finished ? moment.result : signal.label}</span><strong>{state.fault ? faults[state.fault].title : sequence.current.title}</strong><small>{(() => {
-              const edcName = (id: NodeId) => id === "provider" ? "Provider EDC" : id === "consumer" ? "Consumer EDC" : journeyNodes[id].label;
-              const localName = (id: NodeId) => id === "provider" ? "Company A" : id === "consumer" ? "Company B" : journeyNodes[id].label;
-              if (sequence.current.from && sequence.current.to) return `${edcName(sequence.current.from)} → ${edcName(sequence.current.to)}`;
-              return `At ${sequence.current.kind === "local" ? localName(sequence.current.focus) : edcName(sequence.current.focus)}`;
-            })()}</small></div>
-            {sequenceReady && <Check size={21} className={styles.signalCheck}/>}
+          <div className={styles.filmTitle} style={{ "--signal-color": state.fault ? "#ff8ea3" : signal.color } as React.CSSProperties}>
+            <p className={styles.filmChapter}>{String(state.chapter + 1).padStart(2, "0")} / {String(chapters.length).padStart(2, "0")} · {chapter.label}</p>
+            <h2 aria-live="polite">{beatTitle}</h2>
+            <p className={styles.filmMeta}><span>{beatMeta}</span><span>{routeLine(sequence)}</span></p>
+            {sequenceReady && !state.fault && <Check size={18} className={styles.filmCheck} aria-hidden="true"/>}
           </div>
-          {state.complete && <div className={styles.completion} role="status"><div className={styles.completeSeal}><ShieldCheck size={38}/></div><p className={styles.eyebrow}>CONNECTION COMPLETE</p><h2>Understanding,<br/>transferred.</h2><p>You followed a record from its private source through governed access to business use.</p><p>{state.answered.length}/{questionCount} understanding checks passed · {state.attempts} attempts</p><div className={styles.completeActions}><button onClick={restart}><RotateCcw size={16}/> Replay journey</button><Link href="/scenarios">Explore more scenarios <ArrowRight size={16}/></Link></div></div>}
+          <div className={styles.recordChip} aria-hidden="true">
+            <span>BAT-204</span>
+            <strong>42.6 kg CO₂e</strong>
+            <small>{recordState}</small>
+          </div>
+          {state.complete && <div className={styles.completion} role="status"><div className={styles.completeSeal}><ShieldCheck size={38}/></div><p className={styles.eyebrow}>CONNECTION COMPLETE</p><h2>Understanding,<br/>transferred.</h2><p>You followed a battery-footprint record from its private source through governed access to business use.</p><p>{state.answered.length}/{questionCount} understanding checks passed · {state.attempts} attempts</p><div className={styles.completeActions}><button onClick={restart}><RotateCcw size={16}/> Replay journey</button><Link href="/scenarios">Explore more scenarios <ArrowRight size={16}/></Link></div></div>}
         </section>
 
-        <aside className={styles.guide} aria-label="Journey guide">
-          <div className={styles.guideHeading}><span className={styles.eyebrow}>THE EXCHANGE, EXPLAINED</span><span className={styles.chapterCount}>{state.chapter + 1} / {chapters.length}</span></div>
-          <div className={styles.depths} role="group" aria-label="Explanation depth">{(["story", "architect", "developer"] as Depth[]).map(value => <button key={value} aria-pressed={depth === value} onClick={() => setDepth(value)}>{value === "story" ? "Story" : value === "architect" ? "Architect" : "Developer"}</button>)}</div>
+        {!watch && <aside className={styles.guide} aria-label="Journey guide">
+          <div className={styles.guideHeading}>
+            <span className={styles.chapterCount}>{state.chapter + 1} / {chapters.length}</span>
+            <div className={styles.depths} role="group" aria-label="Explanation depth">{(["story", "architect", "developer"] as Depth[]).map(value => <button key={value} aria-pressed={depth === value} onClick={() => setDepth(value)}>{value === "story" ? "Story" : value === "architect" ? "Architect" : "Developer"}</button>)}</div>
+          </div>
+          <div className={styles.chapterCopy} key={`${chapter.id}-${depth}`}>
+            <h2>{chapter.title}</h2>
+            <p className={styles.leadTakeaway}>{chapter.takeaway}</p>
+            <p>{chapter[depth]}</p>
+          </div>
           {selected && <section className={styles.inspector}><div><span className={styles.eyebrow}>SELECTED</span><button onClick={() => setSelected(null)} aria-label="Close selection"><X size={16}/></button></div><h3>{journeyNodes[selected].label}</h3><p>{journeyNodes[selected].description}</p></section>}
-          <div className={styles.chapterCopy} key={`${chapter.id}-${depth}`}><h2>{chapter.title}</h2><p>{chapter[depth]}</p></div>
-          {guided && <section className={styles.sequencePanel} aria-label="Ordered actions in this chapter">
+          <section className={styles.sequencePanel} aria-label="Ordered actions in this chapter">
             <div className={styles.sequenceHeading}><span>FOLLOW THE ORDER</span><span>{sequence.beats.filter(beat => beat.status === "done").length}/{sequence.beats.length}</span></div>
             <ol>{sequence.beats.map((beat, index) => <li key={beat.id} data-status={beat.status} aria-current={beat === sequence.current ? "step" : undefined}>
               <span className={styles.beatNumber}>{beat.status === "done" ? <Check size={12}/> : beat.status === "blocked" ? <X size={12}/> : String(index + 1).padStart(2, "0")}</span><span>{beat.title}</span>
             </li>)}</ol>
-            <p className={styles.beatDetail} aria-live="polite">{state.fault ? "Snapshot at the failed check. Later actions have not happened. Repair to replay the sequence." : sequence.current.detail}</p>
-            {sequenceNote && <p className={styles.sequenceNote}>{sequenceNote}</p>}
-          </section>}
-          {guided && <div className={styles.takeaway}><Sparkles size={17}/><p>{chapter.takeaway}</p></div>}
-          {depth === "developer" && <details className={styles.message} open><summary>Example message fields</summary><p>Illustrative fields only. Not a live API response or a complete DSP payload.</p><pre>{JSON.stringify(chapter.message, null, 2)}</pre></details>}
-          {state.fault ? <section className={styles.fault} role="alert"><h3>{faults[state.fault].title}</h3><p>{faults[state.fault].reason}</p><button onClick={() => dispatch({ type: "repair" })}><RotateCcw size={16}/>{faults[state.fault].repair}</button></section> : guided && chapter.question ? <section className={styles.challenge}>
-            <p className={styles.eyebrow}>{answered ? "UNDERSTANDING CHECKED" : "YOUR TURN"}</p><h3>{chapter.question.prompt}</h3>
+            <p className={styles.beatDetail} aria-live="polite">{state.fault ? "Snapshot at the failed check. Later actions have not happened. Repair to replay." : sequence.current.detail}</p>
+            {sequenceNote && depth !== "story" && <p className={styles.sequenceNote}>{sequenceNote}</p>}
+          </section>
+          {depth === "developer" && <details className={styles.message} open><summary>Example message fields</summary><p>Illustrative only — not a live API payload.</p><pre>{JSON.stringify(chapter.message, null, 2)}</pre></details>}
+          {state.fault ? <section className={styles.fault} role="alert"><h3>{faults[state.fault].title}</h3><p>{faults[state.fault].reason}</p><button onClick={() => dispatch({ type: "repair" })}><RotateCcw size={16}/>{faults[state.fault].repair}</button></section> : chapter.question ? <section className={styles.challenge}>
+            <p className={styles.eyebrow}>{answered ? "CHECKED" : "YOUR TURN"}</p><h3>{chapter.question.prompt}</h3>
             <div className={styles.choices}>{chapter.question.choices.map((choice, i) => <button key={choice} disabled={answered} data-result={state.choice === i ? answered ? "correct" : "incorrect" : undefined} onClick={() => dispatch({ type: "answer", choice: i })}><span>{answered && chapter.question?.answer === i ? <Check size={14}/> : String.fromCharCode(65 + i)}</span>{choice}</button>)}</div>
             {state.choice !== null && <p className={styles.feedback} role="status">{answered ? chapter.question.explanation : "Not quite. " + chapter.question.explanation + " Try again."}</p>}
-          </section> : guided ? <div className={styles.watchHint}><CircleHelp size={17}/><p>Watch the signal on the left, then continue when you’re ready.</p></div> : <div className={styles.watchHint}><CircleHelp size={17}/><p>Watch mode advances automatically. Switch to Guided to answer checks yourself.</p></div>}
-          <div className={styles.guideFooter}><button className={styles.next} disabled={!canContinue} onClick={() => { setSelected(null); dispatch({ type: "next", guided }); }}>{continueLabel}<ArrowRight size={18}/></button><span>{state.answered.length}/{questionCount} checks · this session</span></div>
-        </aside>
+          </section> : <div className={styles.watchHint}><CircleHelp size={17}/><p>Look left. When the beat lands, continue.</p></div>}
+          <div className={styles.guideFooter}>
+            <button className={styles.next} disabled={!canContinue} onClick={() => { setSelected(null); dispatch({ type: "next", guided }); }}>{continueLabel}<ArrowRight size={18}/></button>
+            <span>{state.answered.length}/{questionCount} checks · this session</span>
+          </div>
+        </aside>}
       </div>
 
       <section className={styles.transport} aria-label="Playback controls">
-        <div className={styles.playback}><button className={styles.playButton} onClick={() => setPaused(!paused)} aria-label={paused ? "Play animation" : "Pause animation"}>{paused ? <Play size={18}/> : <Pause size={18}/>}</button><button className={styles.iconButton} disabled={state.chapter === 0} onClick={() => navigate(state.chapter - 1)} aria-label="Previous chapter"><ChevronLeft size={19}/></button><button className={styles.iconButton} onClick={() => dispatch({ type: "replay" })} aria-label="Replay this chapter" title="Replay this chapter"><RotateCcw size={17}/></button><label className={styles.speed}>Speed<select value={speed} onChange={event => setSpeed(Number(event.target.value))}><option value={.5}>0.5×</option><option value={1}>1×</option><option value={1.5}>1.5×</option></select></label></div>
-        <div className={styles.playProgress}><div className={styles.progressTrack} role="progressbar" aria-label="Chapter animation" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(sequence.position * 100)}><span style={{ width: `${sequence.position * 100}%` }}/></div><span>{state.fault ? "Blocked · failure snapshot" : paused ? "Paused" : state.complete ? "Complete" : sequenceReady ? "Ready to continue" : "Following the signal"}</span></div>
-        <div className={styles.renderControls}><label><input type="checkbox" checked={simple} onChange={event => setSimple(event.target.checked)}/> Schematic</label><label><input type="checkbox" checked={motionReduced} disabled={systemReduced} onChange={event => setReduced(event.target.checked)}/> Reduced motion</label></div>
+        <div className={styles.playback}>
+          <button className={styles.playButton} onClick={() => setPaused(!paused)} aria-label={paused ? "Play animation" : "Pause animation"}>{paused ? <Play size={18}/> : <Pause size={18}/>}</button>
+          <button className={styles.iconButton} disabled={state.chapter === 0} onClick={() => navigate(state.chapter - 1)} aria-label="Previous chapter"><ChevronLeft size={19}/></button>
+          <button className={styles.iconButton} onClick={() => dispatch({ type: "replay" })} aria-label="Replay this chapter" title="Replay this chapter"><RotateCcw size={17}/></button>
+          <label className={styles.speed}>Speed<select value={speed} onChange={event => setSpeed(Number(event.target.value))}><option value={.5}>0.5×</option><option value={1}>1×</option><option value={1.5}>1.5×</option></select></label>
+        </div>
+        <div className={styles.playProgress}>
+          <div className={styles.progressTrack} role="progressbar" aria-label="Chapter animation" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(sequence.position * 100)}><span style={{ width: `${sequence.position * 100}%` }}/></div>
+          <span>{state.fault ? "Blocked" : paused ? "Paused" : state.complete ? "Complete" : sequenceReady ? "Ready" : "Playing"}</span>
+        </div>
+        <div className={styles.renderControls}>
+          <label><input type="checkbox" checked={simple} onChange={event => setSimple(event.target.checked)}/> Schematic</label>
+          <label><input type="checkbox" checked={motionReduced} disabled={systemReduced} onChange={event => setReduced(event.target.checked)}/> Reduced motion</label>
+        </div>
       </section>
 
       <nav className={styles.timeline} aria-label="Journey chapters">{chapters.map((item, index) => {
         const locked = guided && index > state.chapter && !state.complete;
-        return <button key={item.id} aria-current={state.chapter === index ? "step" : undefined} disabled={locked} title={locked ? "Finish earlier chapters in Guided mode first" : undefined} onClick={() => navigate(index)}><span className={styles.timelineNumber}>{state.answered.includes(index) ? <Check size={15}/> : String(index + 1).padStart(2, "0")}</span><span>{item.label}</span><i/></button>;
+        return <button key={item.id} aria-current={state.chapter === index ? "step" : undefined} disabled={locked} title={locked ? "Finish earlier chapters in Guided mode first" : undefined} onClick={() => navigate(index)}>
+          <span className={styles.timelineNumber}>{state.answered.includes(index) ? <Check size={15}/> : String(index + 1).padStart(2, "0")}</span>
+          <span>{item.label}</span><i/>
+        </button>;
       })}</nav>
 
-      <footer className={styles.bottomBar}><details className={styles.faultMenu}><summary><GitBranch size={16}/> What if something goes wrong?</summary><div>{(Object.keys(faults) as Fault[]).map(id => <button key={id} onClick={() => { dispatch({ type: "fault", fault: id }); setSelected(null); }}>{faults[id].title}<ArrowRight size={14}/></button>)}</div></details><p>Fictional companies & data · Tractus-X / DSP teaching model · Conceptual flow · No real transfer</p></footer>
+      <footer className={styles.bottomBar}>
+        <details className={styles.faultMenu}>
+          <summary><GitBranch size={16}/> What if something goes wrong?</summary>
+          <div>{(Object.keys(faults) as Fault[]).map(id => <button key={id} onClick={() => { dispatch({ type: "fault", fault: id }); setSelected(null); }}>{faults[id].title}<ArrowRight size={14}/></button>)}</div>
+        </details>
+        <p>Fictional companies & data · Conceptual Tractus-X / DSP model · No real transfer</p>
+      </footer>
     </div>
   </main>;
 }
