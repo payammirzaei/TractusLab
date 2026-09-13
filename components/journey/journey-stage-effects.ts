@@ -58,6 +58,13 @@ export function createJourneyStage(scene: THREE.Scene) {
       focusRing.material.color.set(accent); focusArc.material.color.set(accent);
       focusRing.material.opacity = o.hero ? .38 : .09;
       focusArc.visible = !!o.hero; focusArc.rotation.z = o.reduced ? 0 : o.time * .16;
+      // Keep the floor focus under the hero's topology slot, not a fixed center stage.
+      if (o.hero) {
+        focusRing.position.x = o.hero.position.x;
+        focusRing.position.z = o.hero.position.z;
+        focusArc.position.x = o.hero.position.x;
+        focusArc.position.z = o.hero.position.z;
+      }
       scan.visible = !!o.hero && !o.reduced && !o.finished;
       if (o.hero) { scan.position.copy(o.hero.position); scan.position.y += Math.sin(o.fraction * Math.PI * 2) * .65; }
       scan.material.color.set(accent); scan.material.opacity = o.failed ? .48 : .16;

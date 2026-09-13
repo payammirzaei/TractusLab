@@ -4,6 +4,8 @@ import fs from "node:fs";
 
 const scene = fs.readFileSync(new URL("../components/journey/EdcJourneySceneV2.tsx", import.meta.url), "utf8");
 const css = fs.readFileSync(new URL("../components/journey/edc-scene.module.css", import.meta.url), "utf8");
+const journey = fs.readFileSync(new URL("../components/journey/DataJourney.tsx", import.meta.url), "utf8");
+const stage = fs.readFileSync(new URL("../components/journey/journey-stage-effects.ts", import.meta.url), "utf8");
 
 test("EDC scene keeps Tractus-X connectors as named primary actors", () => {
   assert.match(scene, /TRACTUS-X EDC/);
@@ -12,10 +14,18 @@ test("EDC scene keeps Tractus-X connectors as named primary actors", () => {
   assert.match(scene, /TRACTUS-X DATASPACE/);
 });
 
-test("EDC scene uses a stable centered camera instead of chapter side-panning", () => {
-  assert.match(scene, /camera\.position\.set\(pointer\.x \* \.05/);
-  assert.doesNotMatch(scene, /cameraTarget\.set\(-/);
-  assert.doesNotMatch(scene, /cameraTarget\.set\(span/);
+test("EDC scene keeps heroes on topology homes instead of a center stage teleport", () => {
+  assert.doesNotMatch(scene, /focusHome/);
+  assert.match(scene, /artifacts\[id\]\.group\.position\.copy\(homes\[id\]\)/);
+  assert.match(scene, /aimCamera\(/);
+  assert.match(scene, /Keep the corridor readable/);
+});
+
+test("actor labels and hero callout are projected from world positions", () => {
+  assert.match(scene, /placeLabel\(/);
+  assert.match(scene, /placeCallout\(/);
+  assert.match(scene, /\.project\(camera\)/);
+  assert.match(css, /\.actorStrip\s*\{[\s\S]*inset:0/);
 });
 
 test("business systems stay secondary to EDC actors", () => {
@@ -23,6 +33,13 @@ test("business systems stay secondary to EDC actors", () => {
   assert.match(css, /edcActor[\s\S]*border:1px solid rgba\(121,215,255,\.42\)/);
 });
 
-test("legacy company-to-company direction subline is suppressed", () => {
-  assert.match(css, /aria-live="polite"\]\[aria-atomic="true"\] > small/);
+test("signal readout names EDC actors for control-plane routes", () => {
+  assert.match(journey, /Provider EDC/);
+  assert.match(journey, /Consumer EDC/);
+  assert.doesNotMatch(css, /aria-live="polite"\]\[aria-atomic="true"\] > small/);
+});
+
+test("floor focus ring follows the hero topology slot", () => {
+  assert.match(stage, /focusRing\.position\.x = o\.hero\.position\.x/);
+  assert.match(stage, /focusRing\.position\.z = o\.hero\.position\.z/);
 });

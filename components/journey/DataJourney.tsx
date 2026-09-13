@@ -102,7 +102,12 @@ export function DataJourney() {
           <Scene {...sceneProps}/>
           <div className={styles.signalReadout} style={{ "--signal-color": state.fault ? "#ff8ea3" : signal.color } as React.CSSProperties}>
             <span className={styles.signalNumber}>{String(sequence.beats.indexOf(sequence.current) + 1).padStart(2, "0")}</span>
-            <div aria-live="polite" aria-atomic="true"><span>{state.fault ? "FAILURE SNAPSHOT" : sequence.finished ? moment.result : signal.label}</span><strong>{state.fault ? faults[state.fault].title : sequence.current.title}</strong><small>{sequence.current.from && sequence.current.to ? `${journeyNodes[sequence.current.from].label} → ${journeyNodes[sequence.current.to].label}` : `At ${journeyNodes[sequence.current.focus].label}`}</small></div>
+            <div aria-live="polite" aria-atomic="true"><span>{state.fault ? "FAILURE SNAPSHOT" : sequence.finished ? moment.result : signal.label}</span><strong>{state.fault ? faults[state.fault].title : sequence.current.title}</strong><small>{(() => {
+              const edcName = (id: NodeId) => id === "provider" ? "Provider EDC" : id === "consumer" ? "Consumer EDC" : journeyNodes[id].label;
+              const localName = (id: NodeId) => id === "provider" ? "Company A" : id === "consumer" ? "Company B" : journeyNodes[id].label;
+              if (sequence.current.from && sequence.current.to) return `${edcName(sequence.current.from)} → ${edcName(sequence.current.to)}`;
+              return `At ${sequence.current.kind === "local" ? localName(sequence.current.focus) : edcName(sequence.current.focus)}`;
+            })()}</small></div>
             {sequence.finished && <Check size={21} className={styles.signalCheck}/>}
           </div>
           <div className={styles.sceneCaption} aria-live="polite" key={state.chapter}><span>{String(state.chapter + 1).padStart(2, "0")} / {String(chapters.length).padStart(2, "0")} · {chapter.signal}</span><h2>{state.fault ? faults[state.fault].title : moment.title}</h2><small>{state.fault ? "Repair the exchange to continue" : moment.detail}</small></div>
