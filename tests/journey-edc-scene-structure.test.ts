@@ -5,12 +5,13 @@ import fs from "node:fs";
 const scene = fs.readFileSync(new URL("../components/journey/EdcJourneySceneV2.tsx", import.meta.url), "utf8");
 const css = fs.readFileSync(new URL("../components/journey/edc-scene.module.css", import.meta.url), "utf8");
 const journey = fs.readFileSync(new URL("../components/journey/DataJourney.tsx", import.meta.url), "utf8");
+const journeyCss = fs.readFileSync(new URL("../components/journey/journey.module.css", import.meta.url), "utf8");
 const stage = fs.readFileSync(new URL("../components/journey/journey-stage-effects.ts", import.meta.url), "utf8");
 
 test("EDC scene keeps Tractus-X connectors as named primary actors", () => {
-  assert.match(scene, /TRACTUS-X EDC/);
   assert.match(scene, /Provider EDC/);
   assert.match(scene, /Consumer EDC/);
+  assert.doesNotMatch(scene, /TRACTUS-X EDC/);
 });
 
 test("EDC scene keeps heroes on topology homes instead of a center stage teleport", () => {
@@ -34,6 +35,18 @@ test("actor labels and hero callout are projected from world positions", () => {
   assert.match(scene, /Dock outside the model corridor/);
   assert.match(css, /\.actorStrip\s*\{[\s\S]*inset:0/);
   assert.match(css, /data-dock/);
+});
+
+test("stage declutter keeps one signal and hides redundant chrome", () => {
+  assert.match(journey, /Guided/);
+  assert.doesNotMatch(journey, /> Explore</);
+  assert.doesNotMatch(journey, /FEDERATED DATASPACE/);
+  assert.doesNotMatch(journey, /sceneCaption/);
+  assert.doesNotMatch(journey, /simulationBadge/);
+  assert.match(journey, /sequence\.position >= 0\.62/);
+  assert.match(scene, /HERO_CALLOUT_IDS/);
+  assert.match(scene, /chapter < 6\) return null/);
+  assert.match(journeyCss, /\.sceneCaption,\.legend,\.simulationBadge\s*\{\s*display:none/);
 });
 
 test("business systems stay secondary to EDC actors", () => {

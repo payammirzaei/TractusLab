@@ -1,6 +1,6 @@
 .scene {
   position:absolute;
-  inset:118px 0 78px;
+  inset:96px 0 48px;
   overflow:hidden;
   isolation:isolate;
   cursor:grab;
@@ -9,6 +9,11 @@
 }
 .scene[data-dragging="true"] { cursor:grabbing; }
 .scene[data-reduced="true"] { cursor:default; touch-action:auto; }
+.scene[data-depth="architect"] .businessActor { opacity:.32; }
+.scene[data-depth="architect"] .edcActor { opacity:1; }
+.scene[data-depth="developer"] .businessActor { opacity:.28; }
+.scene[data-depth="developer"] .edcActor { border-color:rgba(121,215,255,.62); }
+.scene[data-depth="story"] .edcActor small { opacity:.55; }
 
 .scene canvas {
   position:absolute;
@@ -276,7 +281,7 @@
 .assetLoading span { font-variant-numeric:tabular-nums; color:#6f9aaf; }
 
 @media(max-width:850px) {
-  .scene { inset:112px 0 76px; }
+  .scene { inset:88px 0 44px; }
   .edcActor { width:128px; padding:7px 6px; }
   .edcActor strong { font-size:11px; }
   .businessActor { min-width:84px; padding-inline:6px; }
@@ -285,7 +290,7 @@
 }
 
 @media(max-width:550px) {
-  .scene { inset:108px 0 92px; }
+  .scene { inset:84px 0 56px; }
   .topologyHeader { width:94%; }
   .dataspaceTitle span { font-size:9px; }
   .businessActor { min-width:50px; border:0; background:transparent; padding:0; }
@@ -306,7 +311,7 @@
 
 /* Immersive mode is a presentation view: one stage, one reading order. */
 :global(.cinema) .scene {
-  inset:108px 0 56px;
+  inset:72px 0 36px;
   background:linear-gradient(180deg,rgba(7,16,28,.22),rgba(7,16,28,.02));
 }
 :global(.cinema) .topologyHeader { top:10px; }
@@ -318,8 +323,8 @@
 :global(.cinema) .assetLoading { bottom:10px; }
 
 @media(max-width:850px) {
-  :global(.cinema) .scene { inset:112px 0 64px; }
+  :global(.cinema) .scene { inset:80px 0 40px; }
 }
 @media(max-width:550px) {
-  :global(.cinema) .scene { inset:120px 0 88px; }
+  :global(.cinema) .scene { inset:88px 0 52px; }
 }

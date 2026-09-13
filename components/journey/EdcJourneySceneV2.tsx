@@ -79,30 +79,33 @@ function ActorStrip({ chapter, onSelect, labelRefs }: {
   return (
     <div className={ui.actorStrip}>
       <button type="button" ref={node => { labelRefs.current["provider-system"] = node; }} onClick={() => onSelect("provider")} className={`${ui.actor} ${ui.businessActor}`} data-active={chapter <= 1}>
-        <strong>Company A</strong><span>Business systems</span>
+        <strong>Company A</strong><span>Source owner</span>
       </button>
       <button type="button" ref={node => { labelRefs.current["provider-edc"] = node; }} onClick={() => onSelect("provider")} className={`${ui.actor} ${ui.edcActor}`} data-active={providerActive}>
-        <span>TRACTUS-X EDC</span><strong>Provider EDC</strong><small>Control plane · Data plane</small>
+        <strong>Provider EDC</strong><small>Control · Data</small>
       </button>
       <button type="button" ref={node => { labelRefs.current["consumer-edc"] = node; }} onClick={() => onSelect("consumer")} className={`${ui.actor} ${ui.edcActor}`} data-active={consumerActive}>
-        <span>TRACTUS-X EDC</span><strong>Consumer EDC</strong><small>Control plane · Data plane</small>
+        <strong>Consumer EDC</strong><small>Control · Data</small>
       </button>
       <button type="button" ref={node => { labelRefs.current["consumer-system"] = node; }} onClick={() => onSelect("consumer")} className={`${ui.actor} ${ui.businessActor}`} data-active={chapter === 4 || chapter === 7}>
-        <strong>Company B</strong><span>Business systems</span>
+        <strong>Company B</strong><span>Requester</span>
       </button>
     </div>
   );
 }
 
+/** Place beats are already covered by the signal readout — only show plaques for exchange artifacts. */
+const HERO_CALLOUT_IDS = new Set<SceneArtifact>(["offer", "trust", "usage", "agreement", "edr", "payload", "copy"]);
+
 function HeroCallout({ item, onSelect, calloutRef }: { item?: DirectedArtifact; onSelect: SceneProps["onSelect"]; calloutRef: RefObject<HTMLButtonElement | null> }) {
-  if (!item) return null;
+  if (!item || !HERO_CALLOUT_IDS.has(item.id)) return null;
   const accent = toneColor(item.tone);
-  const dock = item.id === "source" || item.id === "offer" || item.id === "trust" ? "left"
+  const dock = item.id === "offer" || item.id === "trust" ? "left"
     : item.id === "copy" || item.id === "usage" ? "right"
     : "center";
   return (
     <button type="button" ref={calloutRef} className={ui.heroCallout} data-dock={dock} onClick={() => onSelect(directorArtifactOwners[item.id] ?? "agreement")} style={{ "--hero-accent": accent } as CSSProperties}>
-      <small>NOW <i/> {item.id === "source" ? "PRIVATE AT COMPANY A" : item.id === "copy" ? "RECEIVED AT COMPANY B" : "EXCHANGE ARTIFACT"}</small>
+      <small>ARTIFACT <i/> {item.id === "copy" ? "AT COMPANY B" : "IN THE EXCHANGE"}</small>
       <strong>{item.title}</strong>
       <span>{item.detail}</span>
     </button>
@@ -120,10 +123,12 @@ function PlaneLegend({ chapter, lane }: { chapter: number; lane: "none" | "contr
 }
 
 function PayloadState({ chapter, routeMode, delivered }: { chapter: number; routeMode: EdcRoute["mode"]; delivered: boolean }) {
+  // Idle “not moved” badges only train people to ignore status — show from transfer onward.
+  if (chapter < 6) return null;
   const moving = routeMode === "payload";
   return (
     <div className={ui.payloadState} data-state={delivered || chapter === 7 ? "done" : moving ? "moving" : "idle"}>
-      {delivered || chapter === 7 ? "COPY DELIVERED" : moving ? "PAYLOAD MOVING THROUGH EDC DATA PLANES" : "PAYLOAD NOT MOVED"}
+      {delivered || chapter === 7 ? "COPY DELIVERED" : moving ? "PAYLOAD MOVING" : "AWAITING DATA PLANE"}
     </div>
   );
 }
@@ -136,11 +141,18 @@ export default function EdcJourneySceneV2(props: SceneProps) {
   const calloutRef = useRef<HTMLButtonElement | null>(null);
   const [unavailable, setUnavailable] = useState(false);
   const [loading, setLoading] = useState({ loaded: 0, settled: 0 });
+  const [showLookHint, setShowLookHint] = useState(true);
 
   const frame = sequenceFrame(props.chapter, props.progress, props.fault);
   const directed = directJourneyScene(props.chapter, frame.current.id, frame.current.kind);
   const route = edcRouteForBeat(props.chapter, frame.current.id, frame.current.kind);
   const hero = directed.artifacts.find(item => item.emphasis === "hero") ?? directed.artifacts[0];
+
+  useEffect(() => {
+    if (props.reduced) return;
+    const timer = window.setTimeout(() => setShowLookHint(false), 4200);
+    return () => window.clearTimeout(timer);
+  }, [props.reduced, props.chapter]);
 
   useEffect(() => {
     const element = host.current;
@@ -466,6 +478,7 @@ export default function EdcJourneySceneV2(props: SceneProps) {
       orbit.lastX = event.clientX;
       orbit.lastY = event.clientY;
       element.dataset.dragging = "true";
+      setShowLookHint(false);
       element.setPointerCapture(event.pointerId);
     };
     const up = (event: PointerEvent) => {
@@ -605,7 +618,7 @@ export default function EdcJourneySceneV2(props: SceneProps) {
       placeLabel("provider-edc", labelAnchors["provider-edc"], 1);
       placeLabel("consumer-edc", labelAnchors["consumer-edc"], 2);
       placeLabel("consumer-system", labelAnchors["consumer-system"], 3);
-      placeCallout(activeHero?.id);
+      placeCallout(activeHero && HERO_CALLOUT_IDS.has(activeHero.id) ? activeHero.id : undefined);
 
       stage.update({ time: t, fraction: ease(current.fraction), reduced: p.reduced, failed: !!p.fault, finished: seq.finished,
         color: activeHero ? toneColor(activeHero.tone) : C.control, hero: activeHero ? artifacts[activeHero.id].group : undefined,
@@ -642,6 +655,7 @@ export default function EdcJourneySceneV2(props: SceneProps) {
       className={ui.scene}
       data-reduced={props.reduced}
       data-paused={props.paused}
+      data-depth={props.depth ?? "story"}
       role="group"
       aria-label={`Tractus-X EDC mediated journey. ${chapters[props.chapter].title}. ${frame.current.title}. Drag to look around. Scroll to zoom. Double-click to reset.`}
     >
@@ -650,9 +664,8 @@ export default function EdcJourneySceneV2(props: SceneProps) {
       <HeroCallout item={hero} onSelect={props.onSelect} calloutRef={calloutRef} />
       <PlaneLegend chapter={props.chapter} lane={directed.lane} />
       <PayloadState chapter={props.chapter} routeMode={route.mode} delivered={frame.copyDelivered} />
-      {!props.reduced && <div className={ui.lookHint} aria-hidden="true">Drag to look · Scroll zoom · Double-click reset</div>}
-      {loading.settled < 13 && <div className={ui.assetLoading} role="status"><i/>Assembling the dataspace <span>{loading.settled}/13</span></div>}
-      {loading.settled === 13 && loading.loaded < 13 && <div className={ui.assetLoading} role="status">Some models unavailable · simplified shapes shown</div>}
+      {!props.reduced && showLookHint && <div className={ui.lookHint} aria-hidden="true">Drag to look · Scroll zoom · Double-click reset</div>}
+      {loading.settled < 13 && <div className={ui.assetLoading} role="status"><i/>Loading scene</div>}
     </div>
   );
 }
